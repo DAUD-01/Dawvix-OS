@@ -1,4 +1,4 @@
-import "dotenv/config"; // <--- 1. Must be line 1! Loads .env BEFORE db.js imports
+import "dotenv/config";
 import express, { type Request, type Response } from "express";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
