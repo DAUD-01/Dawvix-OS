@@ -27,3 +27,12 @@ export const loginUser = async (email: string, password: string) => {
   return response.data;
 };
 
+export const getCurrentUser = async (token: string) => {
+  const response = await api.get("/auth/me", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
