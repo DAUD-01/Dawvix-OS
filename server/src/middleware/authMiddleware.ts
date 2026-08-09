@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const secret = process.env.JWT_SECRET as string;
-
 export interface AuthRequest extends Request {
   userId?: string;
 }
@@ -31,6 +29,15 @@ export const protect = (
       return;
     }
 
+    const secret = process.env.JWT_SECRET;
+
+    if (!secret) {
+      res.status(500).json({
+        message: "Server error: JWT_SECRET environment variable is missing",
+      });
+      return;
+    }
+
     const decoded = jwt.verify(token, secret) as unknown as {
       userId: string;
     };
@@ -38,7 +45,9 @@ export const protect = (
     req.userId = decoded.userId;
 
     next();
-  } catch {
+  } catch (error) {
+    console.error("JWT Verification Error:", error);
+
     res.status(401).json({
       message: "Invalid token",
     });
