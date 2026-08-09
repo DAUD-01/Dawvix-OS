@@ -6,6 +6,7 @@ import { useAuthStore } from "./stores/authStore";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Desktop from "./pages/Desktop";
+import ProtectedRoute from "./routes/ProtectedRoutes";
 
 function App() {
   const { token, setUser } = useAuthStore();
@@ -30,7 +31,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/desktop" element={<Desktop />} />
+        <Route
+          path="/desktop"
+          element={<ProtectedRoute>{<Desktop />}</ProtectedRoute>}
+        />
       </Routes>
     </BrowserRouter>
   );

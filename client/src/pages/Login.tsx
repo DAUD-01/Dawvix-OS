@@ -17,6 +17,7 @@ export default function Login() {
       console.log(data);
       console.log(useAuthStore.getState());
       alert("Login Successfully");
+      console.log("logged in....");
 
       localStorage.setItem("token", data.token);
     } catch (error) {
