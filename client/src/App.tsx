@@ -1,12 +1,21 @@
-import { useEffect } from "react";
-import axios from "axios";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Desktop from "./pages/Desktop";
 
 function App() {
-  useEffect(() => {
-    axios.get("http://localhost:5000").then((res) => console.log(res.data));
-  }, []);
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
 
-  return <h1>Dawvix OS</h1>;
+        <Route path="/register" element={<Register />} />
+
+        <Route path="/desktop" element={<Desktop />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
