@@ -95,7 +95,7 @@ export default function Login() {
             <input
               type="email"
               required
-              placeholder="user@dw-os.local"
+              placeholder="username@domain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-slate-700/60 bg-slate-800/50 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition focus:border-cyan-500 focus:bg-slate-800/80 focus:outline-none focus:ring-1 focus:ring-cyan-500"
