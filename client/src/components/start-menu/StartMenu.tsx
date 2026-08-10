@@ -1,0 +1,27 @@
+export default function StartMenu() {
+  return (
+    <div
+      className="
+        absolute
+        bottom-14
+        left-2
+        w-64
+        rounded-xl
+        bg-black/70
+        backdrop-blur-md
+        border
+        border-white/10
+        p-3
+        text-white
+      "
+    >
+      <div className="p-2 hover:bg-white/10 rounded">📁 Files</div>
+
+      <div className="p-2 hover:bg-white/10 rounded">📝 Notes</div>
+
+      <div className="p-2 hover:bg-white/10 rounded">⚙ Settings</div>
+
+      <div className="p-2 hover:bg-white/10 rounded">🚪 Logout</div>
+    </div>
+  );
+}

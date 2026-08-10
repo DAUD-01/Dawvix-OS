@@ -1,6 +1,9 @@
+import StartMenu from "../components/start-menu/StartMenu";
 import Taskbar from "../components/taskbar/Taskbar";
+import { useState } from "react";
 
 export default function Desktop() {
+  const [startOpen, setStartOpen] = useState(false);
   return (
     <>
       <div
@@ -10,17 +13,18 @@ export default function Desktop() {
         overflow-hidden
         relative
         bg-slate-900
-        text-gray
+        text-gray-300
         text-center
       "
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1506744038136-46273834b3fb')",
+            "url('https://static.vecteezy.com/system/resources/previews/043/255/118/non_2x/blue-grainy-gradient-background-with-soft-transitions-for-social-media-vector.jpg')",
         }}
       >
         Desktop
       </div>
-      <Taskbar />
+      <Taskbar onStartClick={() => setStartOpen(!startOpen)} />
+      {startOpen && <StartMenu />}
     </>
   );
 }

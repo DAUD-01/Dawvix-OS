@@ -1,4 +1,10 @@
-export default function Taskbar() {
+import Clock from "./Clock";
+
+interface TaskbarProps {
+  onStartClick: () => void;
+}
+
+export default function Taskbar({ onStartClick }: TaskbarProps) {
   return (
     <div
       className="
@@ -14,7 +20,17 @@ export default function Taskbar() {
         text-black
       "
     >
-      Taskbar
+      <button
+        onClick={onStartClick}
+        className="
+        px-4
+        text-white
+        hover:bg-white/10
+        h-full"
+      >
+        Start
+      </button>
+      <Clock />
     </div>
   );
 }
