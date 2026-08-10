@@ -1,4 +1,8 @@
-export default function StartMenu() {
+interface StartMenuProps {
+  onLogout: () => void;
+}
+
+export default function StartMenu({ onLogout }: StartMenuProps) {
   return (
     <div
       className="
@@ -16,12 +20,19 @@ export default function StartMenu() {
       "
     >
       <div className="p-2 hover:bg-white/10 rounded">📁 Files</div>
-
       <div className="p-2 hover:bg-white/10 rounded">📝 Notes</div>
-
       <div className="p-2 hover:bg-white/10 rounded">⚙ Settings</div>
-
-      <div className="p-2 hover:bg-white/10 rounded">🚪 Logout</div>
+      <button
+        onClick={onLogout}
+        className="
+                p-2
+                hover:bg-white/10
+                rounded
+                w-full
+                text-left"
+      >
+        🚪 Logout
+      </button>
     </div>
   );
 }
