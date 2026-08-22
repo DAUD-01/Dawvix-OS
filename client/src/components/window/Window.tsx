@@ -21,6 +21,15 @@ export default function Window({ window }: WindowProps) {
   }
   return (
     <Rnd
+      position={window.maximized ? { x: 0, y: 0 } : undefined}
+      size={
+        window.maximized
+          ? {
+              width: "100%",
+              height: "100%",
+            }
+          : undefined
+      }
       default={{
         x: window.x,
         y: window.y,
@@ -31,6 +40,8 @@ export default function Window({ window }: WindowProps) {
       minHeight={200}
       bounds="parent"
       className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden"
+      disableDragging={window.maximized}
+      enableResizing={!window.maximized}
       style={{
         zIndex: window.zIndex,
       }}
