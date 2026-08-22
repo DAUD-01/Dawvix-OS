@@ -1,4 +1,5 @@
 import Clock from "./Clock";
+import WindowList from "./WindowList";
 
 interface TaskbarProps {
   onStartClick: () => void;
@@ -17,19 +18,24 @@ export default function Taskbar({ onStartClick }: TaskbarProps) {
         backdrop-blur-md
         border-t
         border-white/10
-        text-black
+        flex
+        items-center
       "
     >
       <button
         onClick={onStartClick}
         className="
-        px-4
-        text-white
-        hover:bg-white/10
-        h-full"
+          px-4
+          text-white
+          hover:bg-white/10
+          h-full
+        "
       >
         Start
       </button>
+
+      <WindowList />
+
       <Clock />
     </div>
   );

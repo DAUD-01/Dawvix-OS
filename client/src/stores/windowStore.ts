@@ -13,6 +13,8 @@ interface WindowStore {
   minimizeWindow: (id: string) => void;
 
   maximizeWindow: (id: string) => void;
+
+  restoreWindow: (id: string) => void;
 }
 
 export const useWindowStore = create<WindowStore>((set) => ({
@@ -32,6 +34,18 @@ export const useWindowStore = create<WindowStore>((set) => ({
           ? {
               ...window,
               maximized: !window.maximized,
+              minimized: false,
+            }
+          : window,
+      ),
+    })),
+
+  restoreWindow: (id) =>
+    set((state) => ({
+      windows: state.windows.map((window) =>
+        window.id === id
+          ? {
+              ...window,
               minimized: false,
             }
           : window,
