@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 
 import { useState } from "react";
+import WindowManager from "../components/window/WindowManager";
+import { useWindowStore } from "../stores/windowStore";
 
 export default function Desktop() {
   const [startOpen, setStartOpen] = useState(false);
@@ -18,6 +20,7 @@ export default function Desktop() {
 
     navigate("/");
   };
+  const openWindow = useWindowStore((state) => state.openWindow);
   return (
     <>
       <div
@@ -46,13 +49,28 @@ export default function Desktop() {
              flex-col
               gap-4"
         >
-          <DesktopIcon icon="📁" name="Files" />
-          <DesktopIcon icon="📝" name="Notes" />
-          <DesktopIcon icon="⚙" name="Settings" />
+          <DesktopIcon
+            icon="📁"
+            name="Files"
+            onClick={() => openWindow("files", "Files")}
+          />{" "}
+          <DesktopIcon
+            icon="📝"
+            name="Notes"
+            onClick={() => openWindow("notes", "Notes")}
+          />{" "}
+          <DesktopIcon
+            icon="⚙"
+            name="Settings"
+            onClick={() => openWindow("settings", "Settings")}
+          />{" "}
         </div>
+
+        <WindowManager />
+
+        <Taskbar onStartClick={() => setStartOpen(!startOpen)} />
+        {startOpen && <StartMenu onLogout={handleLogout} />}
       </div>
-      <Taskbar onStartClick={() => setStartOpen(!startOpen)} />
-      {startOpen && <StartMenu onLogout={handleLogout} />}
     </>
   );
 }
