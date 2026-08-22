@@ -1,5 +1,6 @@
 import type { WindowData } from "../../types/window";
 import { useWindowStore } from "../../stores/windowStore";
+import { Rnd } from "react-rnd";
 
 interface WindowProps {
   window: WindowData;
@@ -11,24 +12,21 @@ export default function Window({ window }: WindowProps) {
   const focusWindow = useWindowStore((state) => state.focusWindow);
 
   return (
-    <div
-      onMouseDown={() => focusWindow(window.id)}
-      className="
-        absolute
-        w-125
-        h-87.5
-        bg-slate-800
-        border
-        border-slate-700
-        rounded-lg
-        shadow-2xl
-        overflow-hidden
-      "
+    <Rnd
+      default={{
+        x: window.x,
+        y: window.y,
+        width: 500,
+        height: 350,
+      }}
+      minWidth={300}
+      minHeight={200}
+      bounds="parent"
+      className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden"
       style={{
-        left: window.x,
-        top: window.y,
         zIndex: window.zIndex,
       }}
+      onMouseDown={() => focusWindow(window.id)}
     >
       {/* Title Bar */}
 
@@ -67,6 +65,6 @@ export default function Window({ window }: WindowProps) {
       >
         {window.title} Content
       </div>
-    </div>
+    </Rnd>
   );
 }
