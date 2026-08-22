@@ -1,6 +1,7 @@
 import type { WindowData } from "../../types/window";
 import { useWindowStore } from "../../stores/windowStore";
 import { Rnd } from "react-rnd";
+import { Maximize2, Minimize2, X } from "lucide-react";
 
 interface WindowProps {
   window: WindowData;
@@ -11,6 +12,13 @@ export default function Window({ window }: WindowProps) {
 
   const focusWindow = useWindowStore((state) => state.focusWindow);
 
+  const minimizeWindow = useWindowStore((state) => state.minimizeWindow);
+
+  const maximizeWindow = useWindowStore((state) => state.maximizeWindow);
+
+  if (window.minimized) {
+    return null;
+  }
   return (
     <Rnd
       default={{
@@ -43,16 +51,28 @@ export default function Window({ window }: WindowProps) {
       >
         <span>{window.title}</span>
 
-        <button
-          onClick={() => closeWindow(window.id)}
-          className="
-            px-2
-            hover:bg-red-500
-            rounded
-          "
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => minimizeWindow(window.id)}
+            className="p-2 hover:bg-white/10 rounded"
+          >
+            <Minimize2 size={14} />
+          </button>
+
+          <button
+            onClick={() => maximizeWindow(window.id)}
+            className="p-2 hover:bg-white/10 rounded"
+          >
+            <Maximize2 size={14} />
+          </button>
+
+          <button
+            onClick={() => closeWindow(window.id)}
+            className="p-2 hover:bg-red-500 rounded"
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Content */}

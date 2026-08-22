@@ -9,10 +9,34 @@ interface WindowStore {
   closeWindow: (id: string) => void;
 
   focusWindow: (id: string) => void;
+
+  minimizeWindow: (id: string) => void;
+
+  maximizeWindow: (id: string) => void;
 }
 
 export const useWindowStore = create<WindowStore>((set) => ({
   windows: [],
+
+  minimizeWindow: (id) =>
+    set((state) => ({
+      windows: state.windows.map((window) =>
+        window.id === id ? { ...window, minimized: true } : window,
+      ),
+    })),
+
+  maximizeWindow: (id) =>
+    set((state) => ({
+      windows: state.windows.map((window) =>
+        window.id === id
+          ? {
+              ...window,
+              maximized: !window.maximized,
+              minimized: false,
+            }
+          : window,
+      ),
+    })),
 
   openWindow: (id, title) =>
     set((state) => {
