@@ -6,4 +6,7 @@ export interface WindowData {
     maximized: boolean;
 
     zIndex: number;
+
+    x: number;
+    y: number;
 }

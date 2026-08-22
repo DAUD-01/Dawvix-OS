@@ -28,9 +28,14 @@ export const useWindowStore = create<WindowStore>((set) => ({
           {
             id,
             title,
+
             minimized: false,
             maximized: false,
+
             zIndex: state.windows.length + 1,
+
+            x: 150 + state.windows.length * 30,
+            y: 100 + state.windows.length * 30,
           },
         ],
       };
