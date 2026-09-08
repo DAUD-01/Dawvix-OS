@@ -1,12 +1,21 @@
 export interface WindowData {
-    id: string;
-    title: string;
+  id: string;
+  title: string;
 
-    minimized: boolean;
-    maximized: boolean;
+  minimized: boolean;
+  maximized: boolean;
 
-    zIndex: number;
+  zIndex: number;
 
-    x: number;
-    y: number;
+  x: number;
+  y: number;
+
+  width: number;
+  height: number;
+
+  previousX?: number;
+  previousY?: number;
+
+  previousWidth?: number;
+  previousHeight?: number;
 }
