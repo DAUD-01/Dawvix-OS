@@ -16,25 +16,40 @@ export default function Window({ window }: WindowProps) {
 
   const maximizeWindow = useWindowStore((state) => state.maximizeWindow);
 
+  const updateWindowGeometry = useWindowStore(
+    (state) => state.updateWindowGeometry,
+  );
+
   if (window.minimized) {
     return null;
   }
   return (
     <Rnd
-      position={window.maximized ? { x: 0, y: 0 } : undefined}
-      size={
-        window.maximized
-          ? {
-              width: "100%",
-              height: "100%",
-            }
-          : undefined
-      }
-      default={{
-        x: window.x,
-        y: window.y,
-        width: 500,
-        height: 350,
+      position={{
+        x: window.maximized ? 0 : window.x,
+        y: window.maximized ? 0 : window.y,
+      }}
+      size={{
+        width: window.maximized ? "100%" : window.width,
+        height: window.maximized ? "100%" : window.height,
+      }}
+      onDragStop={(_, data) => {
+        updateWindowGeometry(
+          window.id,
+          data.x,
+          data.y,
+          window.width,
+          window.height,
+        );
+      }}
+      onResizeStop={(_, __, ref, ___, position) => {
+        updateWindowGeometry(
+          window.id,
+          position.x,
+          position.y,
+          parseInt(ref.style.width),
+          parseInt(ref.style.height),
+        );
       }}
       minWidth={300}
       minHeight={200}

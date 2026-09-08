@@ -15,6 +15,14 @@ interface WindowStore {
   maximizeWindow: (id: string) => void;
 
   restoreWindow: (id: string) => void;
+
+  updateWindowGeometry: (
+    id: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => void;
 }
 
 export const useWindowStore = create<WindowStore>((set) => ({
@@ -29,15 +37,38 @@ export const useWindowStore = create<WindowStore>((set) => ({
 
   maximizeWindow: (id) =>
     set((state) => ({
-      windows: state.windows.map((window) =>
-        window.id === id
-          ? {
-              ...window,
-              maximized: !window.maximized,
-              minimized: false,
-            }
-          : window,
-      ),
+      windows: state.windows.map((window) => {
+        if (window.id !== id) {
+          return window;
+        }
+
+        if (!window.maximized) {
+          return {
+            ...window,
+
+            previousX: window.x,
+            previousY: window.y,
+
+            previousWidth: window.width,
+            previousHeight: window.height,
+
+            maximized: true,
+          };
+        }
+
+        return {
+          ...window,
+
+          maximized: false,
+
+          x: window.previousX ?? 150,
+          y: window.previousY ?? 100,
+
+          width: window.previousWidth ?? 500,
+
+          height: window.previousHeight ?? 350,
+        };
+      }),
     })),
 
   restoreWindow: (id) =>
@@ -74,6 +105,9 @@ export const useWindowStore = create<WindowStore>((set) => ({
 
             x: 150 + state.windows.length * 30,
             y: 100 + state.windows.length * 30,
+
+            width: 500,
+            height: 350,
           },
         ],
       };
@@ -82,6 +116,21 @@ export const useWindowStore = create<WindowStore>((set) => ({
   closeWindow: (id) =>
     set((state) => ({
       windows: state.windows.filter((w) => w.id !== id),
+    })),
+
+  updateWindowGeometry: (id, x, y, width, height) =>
+    set((state) => ({
+      windows: state.windows.map((window) =>
+        window.id === id
+          ? {
+              ...window,
+              x,
+              y,
+              width,
+              height,
+            }
+          : window,
+      ),
     })),
 
   focusWindow: (id) =>
