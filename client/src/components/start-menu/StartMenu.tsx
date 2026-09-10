@@ -19,9 +19,12 @@ export default function StartMenu({ onLogout }: StartMenuProps) {
         text-white
       "
     >
-      <div className="p-2 hover:bg-white/10 rounded">📁 Files</div>
-      <div className="p-2 hover:bg-white/10 rounded">📝 Notes</div>
-      <div className="p-2 hover:bg-white/10 rounded">⚙ Settings</div>
+      <div className="text-left">
+        <div className="p-2 hover:bg-white/10 rounded">📁 Files</div>
+        <div className="p-2 hover:bg-white/10 rounded">📝 Notes</div>
+        <div className="p-2 hover:bg-white/10 rounded">⚙ Settings</div>
+      </div>
+
       <button
         onClick={onLogout}
         className="
@@ -29,9 +32,11 @@ export default function StartMenu({ onLogout }: StartMenuProps) {
                 hover:bg-white/10
                 rounded
                 w-full
-                text-left"
+                font-bold
+                text-center
+                underline-offset-1"
       >
-        🚪 Logout
+        Logout
       </button>
     </div>
   );
