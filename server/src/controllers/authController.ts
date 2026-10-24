@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
+import { createDefaultFileSystem } from "../services/filesystemService.js";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -35,6 +36,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email,
       password: hashedPassword,
     });
+
+    await createDefaultFileSystem(user._id.toString(), user.username);
 
     res.status(201).json({
       message: "User created successfully",
