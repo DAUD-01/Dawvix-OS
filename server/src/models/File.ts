@@ -1,29 +1,29 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, type Types } from "mongoose";
 
 export interface IFile extends Document {
   name: string;
   content: string;
   parentId: string;
-  ownerId: string;
+  ownerId: Types.ObjectId | string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const FileSchema = new Schema(
+const FileSchema = new Schema<IFile>(
   {
     name: {
       type: String,
       required: true,
+      trim: true,
     },
-
     content: {
       type: String,
       default: "",
     },
-
     parentId: {
       type: String,
       required: true,
     },
-
     ownerId: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -32,7 +32,16 @@ const FileSchema = new Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (_doc, ret: Record<string, unknown>) => {
+        ret.id = ret._id?.toString();
+        delete ret.__v;
+        return ret;
+      },
+    },
   },
 );
 
-export default model<IFile>("File", FileSchema);
+export const File = model<IFile>("File", FileSchema);
+export default File;
