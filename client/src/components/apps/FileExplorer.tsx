@@ -13,6 +13,14 @@ import {
   Search,
   LayoutGrid,
   List,
+  Scissors,
+  ClipboardPaste,
+  Home,
+  FileCode,
+  Image as ImageIcon,
+  Download,
+  FolderGit2,
+  FileCheck,
 } from "lucide-react";
 import {
   getDirectoryContents,
@@ -26,6 +34,13 @@ import {
 } from "../../services/filesystemService";
 import { useAuthStore } from "../../stores/authStore";
 import { useWindowStore } from "../../stores/windowStore";
+
+interface ClipboardItem {
+  id: string;
+  name: string;
+  type: "folder" | "file";
+  action: "cut";
+}
 
 export default function FileExplorer() {
   const user = useAuthStore((state) => state.user);
@@ -41,7 +56,17 @@ export default function FileExplorer() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Creation modals
+  // Selection & Clipboard
+  const [selectedItem, setSelectedItem] = useState<{
+    id: string;
+    type: "folder" | "file";
+    name: string;
+    size?: number;
+  } | null>(null);
+
+  const [clipboard, setClipboard] = useState<ClipboardItem | null>(null);
+
+  // Modals
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFileModal, setShowNewFileModal] = useState(false);
@@ -56,8 +81,9 @@ export default function FileExplorer() {
         setFiles(data.files);
         setPath(data.path);
         setCurrentFolderId(data.currentFolder?.id || folderId);
+        setSelectedItem(null);
       } catch {
-        // Fallback local filesystem view if backend connection is unavailable
+        // Fallback demo file system if offline
         const fallbackFolders: FolderData[] = [
           { id: "f-doc", name: "documents", parentId: "user", ownerId: "local" },
           { id: "f-not", name: "notes", parentId: "user", ownerId: "local" },
@@ -105,6 +131,18 @@ export default function FileExplorer() {
       if (parentCrumb) {
         loadDirectory(parentCrumb.id === "root" ? undefined : parentCrumb.id);
       }
+    }
+  };
+
+  // Jump directly to known user folders
+  const handleQuickJump = (folderName: string) => {
+    const match = folders.find(
+      (f) => f.name.toLowerCase() === folderName.toLowerCase(),
+    );
+    if (match) {
+      handleNavigateFolder(match.id);
+    } else {
+      loadDirectory();
     }
   };
 
@@ -174,7 +212,7 @@ export default function FileExplorer() {
     if (
       !confirm(
         `Are you sure you want to delete ${type} "${name}"?${
-          type === "folder" ? " All files inside will also be deleted." : ""
+          type === "folder" ? " All contents inside will also be removed." : ""
         }`,
       )
     ) {
@@ -191,6 +229,29 @@ export default function FileExplorer() {
     }
   };
 
+  // Move / Cut & Paste
+  const handleCut = (item: { id: string; name: string; type: "folder" | "file" }) => {
+    setClipboard({ ...item, action: "cut" });
+  };
+
+  const handlePaste = async () => {
+    if (!clipboard || !currentFolderId) return;
+
+    try {
+      if (clipboard.type === "folder") {
+        await updateFolder(clipboard.id, undefined, currentFolderId);
+      } else {
+        await updateFile(clipboard.id, undefined, undefined, currentFolderId);
+      }
+      setClipboard(null);
+      loadDirectory(currentFolderId);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+      alert(msg || "Failed to move item");
+    }
+  };
+
   const handleOpenFile = (file: FileData) => {
     openWindow("notes", `Notes - ${file.name}`, {
       fileId: file.id,
@@ -199,7 +260,29 @@ export default function FileExplorer() {
     });
   };
 
-  // Filter items by search query
+  // Helper for file icons
+  const getFileIcon = (name: string) => {
+    const ext = name.split(".").pop()?.toLowerCase();
+    switch (ext) {
+      case "js":
+      case "ts":
+      case "jsx":
+      case "tsx":
+      case "json":
+      case "html":
+      case "css":
+        return <FileCode size={40} className="text-yellow-400" />;
+      case "png":
+      case "jpg":
+      case "jpeg":
+      case "svg":
+      case "gif":
+        return <ImageIcon size={40} className="text-purple-400" />;
+      default:
+        return <FileText size={40} className="text-cyan-400" />;
+    }
+  };
+
   const filteredFolders = folders.filter((f) =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
@@ -208,10 +291,10 @@ export default function FileExplorer() {
   );
 
   return (
-    <div className="flex h-full flex-col bg-slate-900/60 text-slate-200 select-none">
-      {/* Top Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 bg-slate-950/50 px-3 py-2 text-xs">
-        {/* Navigation & Breadcrumbs */}
+    <div className="flex h-full flex-col bg-slate-900/70 text-slate-200 select-none">
+      {/* Top Action Ribbon / Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 bg-slate-950/70 px-3 py-2 text-xs">
+        {/* Navigation & Address Bar */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <button
             type="button"
@@ -232,7 +315,7 @@ export default function FileExplorer() {
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </button>
 
-          {/* Breadcrumb Path Bar */}
+          {/* Breadcrumb Path Address Bar */}
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-300 overflow-x-auto text-[11px] max-w-full">
             <HardDrive size={13} className="text-cyan-400 shrink-0 mr-1" />
             {path.map((crumb, idx) => (
@@ -256,7 +339,7 @@ export default function FileExplorer() {
 
         {/* Search & Actions */}
         <div className="flex items-center gap-2">
-          {/* Search Bar */}
+          {/* Search Box */}
           <div className="relative flex items-center">
             <Search
               size={12}
@@ -264,12 +347,39 @@ export default function FileExplorer() {
             />
             <input
               type="text"
-              placeholder="Search in folder..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-7 w-32 sm:w-40 rounded-lg bg-slate-950/80 border border-slate-800 pl-7 pr-2 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="h-7 w-28 sm:w-36 rounded-lg bg-slate-950/80 border border-slate-800 pl-7 pr-2 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
+
+          {/* Cut & Paste Buttons */}
+          <button
+            type="button"
+            disabled={!selectedItem}
+            onClick={() => selectedItem && handleCut(selectedItem)}
+            title="Cut selected item to move"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 transition cursor-pointer text-[11px]"
+          >
+            <Scissors size={12} className="text-amber-400" />
+            <span className="hidden md:inline">Cut</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!clipboard}
+            onClick={handlePaste}
+            title={
+              clipboard
+                ? `Paste "${clipboard.name}" into current folder`
+                : "Nothing to paste"
+            }
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 transition cursor-pointer text-[11px]"
+          >
+            <ClipboardPaste size={12} className="text-emerald-400" />
+            <span className="hidden md:inline">Paste</span>
+          </button>
 
           {/* View Toggle */}
           <div className="flex items-center bg-slate-950/80 rounded-lg p-0.5 border border-slate-800">
@@ -299,233 +409,452 @@ export default function FileExplorer() {
             </button>
           </div>
 
-          {/* Creation Buttons */}
+          {/* Add Folder & File */}
           <button
             type="button"
             onClick={() => setShowNewFolderModal(true)}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition cursor-pointer"
           >
             <FolderPlus size={13} className="text-amber-400" />
-            <span className="hidden sm:inline">New Folder</span>
+            <span className="hidden sm:inline">Folder</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowNewFileModal(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-medium transition cursor-pointer"
           >
-            <FilePlus size={13} className="text-emerald-400" />
-            <span className="hidden sm:inline">New File</span>
+            <FilePlus size={13} className="text-slate-950" />
+            <span className="hidden sm:inline">File</span>
           </button>
         </div>
       </div>
 
-      {/* Main File Explorer Viewport */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {filteredFolders.length === 0 && filteredFiles.length === 0 && !loading ? (
-          <div className="flex h-56 flex-col items-center justify-center text-slate-500 text-xs gap-2">
-            <Folder size={40} className="text-slate-600 stroke-1" />
-            <p>
-              {searchQuery
-                ? `No items match "${searchQuery}"`
-                : "This directory is empty"}
-            </p>
-          </div>
-        ) : viewMode === "grid" ? (
-          /* Grid View */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
-            {filteredFolders.map((folder) => (
-              <div
-                key={folder.id}
-                onDoubleClick={() => handleNavigateFolder(folder.id)}
-                className="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border border-transparent hover:border-slate-700/60 hover:bg-slate-800/50 transition cursor-pointer select-none"
+      {/* Main Content Area (Sidebar + File Grid/List) */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Windows Explorer Navigation Sidebar */}
+        <aside className="w-44 border-r border-slate-800 bg-slate-950/40 p-2.5 flex flex-col gap-3 overflow-y-auto hidden sm:flex shrink-0 text-xs">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-2 block mb-1">
+              Quick Access
+            </span>
+            <div className="space-y-0.5">
+              <button
+                type="button"
+                onClick={() => loadDirectory()}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 text-slate-300 hover:text-white text-left transition cursor-pointer"
               >
-                <Folder
-                  size={46}
-                  className="text-amber-400 group-hover:scale-105 transition-transform"
-                />
-                <span className="text-xs font-medium text-slate-200 text-center truncate w-full">
-                  {folder.name}
-                </span>
+                <Home size={14} className="text-cyan-400" />
+                <span className="truncate">Home ({user?.username || "user"})</span>
+              </button>
 
-                {/* Quick actions on hover */}
-                <div className="absolute top-1 right-1 flex items-center opacity-0 group-hover:opacity-100 transition">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRename("folder", folder.id, folder.name);
-                    }}
-                    title="Rename Folder"
-                    className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
-                  >
-                    <Edit2 size={11} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete("folder", folder.id, folder.name);
-                    }}
-                    title="Delete Folder"
-                    className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {filteredFiles.map((file) => (
-              <div
-                key={file.id}
-                onDoubleClick={() => handleOpenFile(file)}
-                className="group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border border-transparent hover:border-slate-700/60 hover:bg-slate-800/50 transition cursor-pointer select-none"
+              <button
+                type="button"
+                onClick={() => handleQuickJump("documents")}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 text-slate-300 hover:text-white text-left transition cursor-pointer"
               >
-                <FileText
-                  size={46}
-                  className="text-cyan-400 group-hover:scale-105 transition-transform"
-                />
-                <span className="text-xs font-medium text-slate-200 text-center truncate w-full">
-                  {file.name}
-                </span>
+                <FileText size={14} className="text-blue-400" />
+                <span>Documents</span>
+              </button>
 
-                {/* Quick actions on hover */}
-                <div className="absolute top-1 right-1 flex items-center opacity-0 group-hover:opacity-100 transition">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRename("file", file.id, file.name);
-                    }}
-                    title="Rename File"
-                    className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
-                  >
-                    <Edit2 size={11} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete("file", file.id, file.name);
-                    }}
-                    title="Delete File"
-                    className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              <button
+                type="button"
+                onClick={() => handleQuickJump("notes")}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 text-slate-300 hover:text-white text-left transition cursor-pointer"
+              >
+                <FileCheck size={14} className="text-emerald-400" />
+                <span>Notes</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickJump("projects")}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 text-slate-300 hover:text-white text-left transition cursor-pointer"
+              >
+                <FolderGit2 size={14} className="text-yellow-400" />
+                <span>Projects</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickJump("downloads")}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 text-slate-300 hover:text-white text-left transition cursor-pointer"
+              >
+                <Download size={14} className="text-purple-400" />
+                <span>Downloads</span>
+              </button>
+            </div>
           </div>
-        ) : (
-          /* List View */
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 font-medium">
-                  <th className="pb-2 pl-2">Name</th>
-                  <th className="pb-2">Type</th>
-                  <th className="pb-2">Size</th>
-                  <th className="pb-2 pr-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {filteredFolders.map((folder) => (
-                  <tr
+
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-2 block mb-1">
+              Virtual Drive
+            </span>
+            <div className="space-y-0.5">
+              <button
+                type="button"
+                onClick={() => loadDirectory("root")}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 text-slate-300 hover:text-white text-left transition cursor-pointer"
+              >
+                <HardDrive size={14} className="text-slate-400" />
+                <span>Root (/)</span>
+              </button>
+            </div>
+          </div>
+
+          {clipboard && (
+            <div className="mt-auto rounded-lg bg-cyan-950/40 border border-cyan-800/40 p-2 text-[11px] text-cyan-300">
+              <span className="block font-medium">Moving item:</span>
+              <span className="truncate block opacity-80">{clipboard.name}</span>
+            </div>
+          )}
+        </aside>
+
+        {/* Viewport for Files & Folders */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {filteredFolders.length === 0 && filteredFiles.length === 0 && !loading ? (
+            <div className="flex h-56 flex-col items-center justify-center text-slate-500 text-xs gap-2">
+              <Folder size={44} className="text-slate-600 stroke-1" />
+              <p>
+                {searchQuery
+                  ? `No items match "${searchQuery}"`
+                  : "This folder is empty"}
+              </p>
+            </div>
+          ) : viewMode === "grid" ? (
+            /* Grid View */
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              {filteredFolders.map((folder) => {
+                const isSelected =
+                  selectedItem?.id === folder.id && selectedItem.type === "folder";
+                const isCut = clipboard?.id === folder.id;
+
+                return (
+                  <div
                     key={folder.id}
+                    onClick={() =>
+                      setSelectedItem({
+                        id: folder.id,
+                        type: "folder",
+                        name: folder.name,
+                      })
+                    }
                     onDoubleClick={() => handleNavigateFolder(folder.id)}
-                    className="hover:bg-slate-800/40 transition cursor-pointer group"
+                    className={`
+                      group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition cursor-pointer select-none
+                      ${
+                        isSelected
+                          ? "border-cyan-500 bg-cyan-500/10 shadow-lg"
+                          : "border-transparent hover:border-slate-700/60 hover:bg-slate-800/50"
+                      }
+                      ${isCut ? "opacity-40" : "opacity-100"}
+                    `}
                   >
-                    <td className="py-2 pl-2 flex items-center gap-2">
-                      <Folder size={16} className="text-amber-400 shrink-0" />
-                      <span className="font-medium text-slate-200">
-                        {folder.name}
-                      </span>
-                    </td>
-                    <td className="py-2 text-slate-400">File folder</td>
-                    <td className="py-2 text-slate-500">—</td>
-                    <td className="py-2 pr-2 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRename("folder", folder.id, folder.name);
-                          }}
-                          className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete("folder", folder.id, folder.name);
-                          }}
-                          className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    <Folder
+                      size={46}
+                      className="text-amber-400 group-hover:scale-105 transition-transform"
+                    />
+                    <span className="text-xs font-medium text-slate-200 text-center truncate w-full">
+                      {folder.name}
+                    </span>
 
-                {filteredFiles.map((file) => (
-                  <tr
+                    {/* Quick actions on hover */}
+                    <div className="absolute top-1 right-1 flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCut({
+                            id: folder.id,
+                            name: folder.name,
+                            type: "folder",
+                          });
+                        }}
+                        title="Cut"
+                        className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                      >
+                        <Scissors size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRename("folder", folder.id, folder.name);
+                        }}
+                        title="Rename"
+                        className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                      >
+                        <Edit2 size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete("folder", folder.id, folder.name);
+                        }}
+                        title="Delete"
+                        className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredFiles.map((file) => {
+                const isSelected =
+                  selectedItem?.id === file.id && selectedItem.type === "file";
+                const isCut = clipboard?.id === file.id;
+
+                return (
+                  <div
                     key={file.id}
+                    onClick={() =>
+                      setSelectedItem({
+                        id: file.id,
+                        type: "file",
+                        name: file.name,
+                        size: file.content ? file.content.length : 0,
+                      })
+                    }
                     onDoubleClick={() => handleOpenFile(file)}
-                    className="hover:bg-slate-800/40 transition cursor-pointer group"
+                    className={`
+                      group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition cursor-pointer select-none
+                      ${
+                        isSelected
+                          ? "border-cyan-500 bg-cyan-500/10 shadow-lg"
+                          : "border-transparent hover:border-slate-700/60 hover:bg-slate-800/50"
+                      }
+                      ${isCut ? "opacity-40" : "opacity-100"}
+                    `}
                   >
-                    <td className="py-2 pl-2 flex items-center gap-2">
-                      <FileText size={16} className="text-cyan-400 shrink-0" />
-                      <span className="font-medium text-slate-200">
-                        {file.name}
-                      </span>
-                    </td>
-                    <td className="py-2 text-slate-400">Document</td>
-                    <td className="py-2 text-slate-500">
-                      {file.content ? `${file.content.length} B` : "0 B"}
-                    </td>
-                    <td className="py-2 pr-2 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRename("file", file.id, file.name);
-                          }}
-                          className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete("file", file.id, file.name);
-                          }}
-                          className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </td>
+                    <div className="group-hover:scale-105 transition-transform">
+                      {getFileIcon(file.name)}
+                    </div>
+                    <span className="text-xs font-medium text-slate-200 text-center truncate w-full">
+                      {file.name}
+                    </span>
+
+                    {/* Quick actions on hover */}
+                    <div className="absolute top-1 right-1 flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCut({
+                            id: file.id,
+                            name: file.name,
+                            type: "file",
+                          });
+                        }}
+                        title="Cut"
+                        className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                      >
+                        <Scissors size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRename("file", file.id, file.name);
+                        }}
+                        title="Rename"
+                        className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                      >
+                        <Edit2 size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete("file", file.id, file.name);
+                        }}
+                        title="Delete"
+                        className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* List View */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 font-medium">
+                    <th className="pb-2 pl-2">Name</th>
+                    <th className="pb-2">Type</th>
+                    <th className="pb-2">Size</th>
+                    <th className="pb-2 pr-2 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {filteredFolders.map((folder) => {
+                    const isSelected =
+                      selectedItem?.id === folder.id &&
+                      selectedItem.type === "folder";
+
+                    return (
+                      <tr
+                        key={folder.id}
+                        onClick={() =>
+                          setSelectedItem({
+                            id: folder.id,
+                            type: "folder",
+                            name: folder.name,
+                          })
+                        }
+                        onDoubleClick={() => handleNavigateFolder(folder.id)}
+                        className={`transition cursor-pointer group ${
+                          isSelected ? "bg-cyan-500/10" : "hover:bg-slate-800/40"
+                        }`}
+                      >
+                        <td className="py-2 pl-2 flex items-center gap-2">
+                          <Folder size={16} className="text-amber-400 shrink-0" />
+                          <span className="font-medium text-slate-200">
+                            {folder.name}
+                          </span>
+                        </td>
+                        <td className="py-2 text-slate-400">File folder</td>
+                        <td className="py-2 text-slate-500">—</td>
+                        <td className="py-2 pr-2 text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCut({
+                                  id: folder.id,
+                                  name: folder.name,
+                                  type: "folder",
+                                });
+                              }}
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                            >
+                              <Scissors size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRename("folder", folder.id, folder.name);
+                              }}
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete("folder", folder.id, folder.name);
+                              }}
+                              className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {filteredFiles.map((file) => {
+                    const isSelected =
+                      selectedItem?.id === file.id && selectedItem.type === "file";
+
+                    return (
+                      <tr
+                        key={file.id}
+                        onClick={() =>
+                          setSelectedItem({
+                            id: file.id,
+                            type: "file",
+                            name: file.name,
+                            size: file.content ? file.content.length : 0,
+                          })
+                        }
+                        onDoubleClick={() => handleOpenFile(file)}
+                        className={`transition cursor-pointer group ${
+                          isSelected ? "bg-cyan-500/10" : "hover:bg-slate-800/40"
+                        }`}
+                      >
+                        <td className="py-2 pl-2 flex items-center gap-2">
+                          <FileText size={16} className="text-cyan-400 shrink-0" />
+                          <span className="font-medium text-slate-200">
+                            {file.name}
+                          </span>
+                        </td>
+                        <td className="py-2 text-slate-400">Document</td>
+                        <td className="py-2 text-slate-500">
+                          {file.content ? `${file.content.length} B` : "0 B"}
+                        </td>
+                        <td className="py-2 pr-2 text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCut({
+                                  id: file.id,
+                                  name: file.name,
+                                  type: "file",
+                                });
+                              }}
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                            >
+                              <Scissors size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRename("file", file.id, file.name);
+                              }}
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete("file", file.id, file.name);
+                              }}
+                              className="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Directory Status Footer */}
-      <div className="border-t border-slate-800 bg-slate-950/60 px-3 py-1.5 text-[11px] text-slate-500 flex items-center justify-between">
-        <span>
-          {filteredFolders.length} folders, {filteredFiles.length} files
-        </span>
-        <span>Hierarchical Virtual VFS</span>
+      <div className="border-t border-slate-800 bg-slate-950/70 px-3 py-1.5 text-[11px] text-slate-400 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span>
+            {filteredFolders.length} folders, {filteredFiles.length} files
+          </span>
+          {selectedItem && (
+            <span className="text-cyan-400 border-l border-slate-800 pl-3">
+              Selected: {selectedItem.name}{" "}
+              {selectedItem.size !== undefined && `(${selectedItem.size} B)`}
+            </span>
+          )}
+        </div>
+        <span>Dawvix Virtual VFS</span>
       </div>
 
       {/* New Folder Modal */}

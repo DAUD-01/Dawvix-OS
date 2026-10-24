@@ -36,6 +36,14 @@ export const getDirectoryContents = async (
   return response.data;
 };
 
+export const getFileSystemTree = async (): Promise<{
+  folders: FolderData[];
+  files: FileData[];
+}> => {
+  const response = await api.get("/filesystem/tree");
+  return response.data;
+};
+
 export const createFolder = async (
   name: string,
   parentId?: string | null,
@@ -46,9 +54,13 @@ export const createFolder = async (
 
 export const updateFolder = async (
   id: string,
-  name: string,
+  name?: string,
+  parentId?: string | null,
 ): Promise<{ message: string; folder: FolderData }> => {
-  const response = await api.put(`/filesystem/folder/${id}`, { name });
+  const response = await api.put(`/filesystem/folder/${id}`, {
+    name,
+    parentId,
+  });
   return response.data;
 };
 
@@ -74,8 +86,13 @@ export const updateFile = async (
   id: string,
   content?: string,
   name?: string,
+  parentId?: string,
 ): Promise<{ message: string; file: FileData }> => {
-  const response = await api.put(`/filesystem/file/${id}`, { content, name });
+  const response = await api.put(`/filesystem/file/${id}`, {
+    content,
+    name,
+    parentId,
+  });
   return response.data;
 };
 

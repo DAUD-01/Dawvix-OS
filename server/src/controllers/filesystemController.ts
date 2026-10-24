@@ -177,15 +177,10 @@ export const updateFolder = async (
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, parentId } = req.body;
 
     if (!userId || !id) {
       res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    if (!name || typeof name !== "string" || !name.trim()) {
-      res.status(400).json({ message: "Folder name is required" });
       return;
     }
 
@@ -195,22 +190,34 @@ export const updateFolder = async (
       return;
     }
 
-    const trimmedName = name.trim();
-    const existing = await Folder.findOne({
-      _id: { $ne: folder._id },
-      name: trimmedName,
-      parentId: folder.parentId,
-      ownerId: userId,
-    });
+    if (name && typeof name === "string" && name.trim()) {
+      const trimmedName = name.trim();
+      const existing = await Folder.findOne({
+        _id: { $ne: folder._id },
+        name: trimmedName,
+        parentId: parentId !== undefined ? parentId : folder.parentId,
+        ownerId: userId,
+      });
 
-    if (existing) {
-      res
-        .status(400)
-        .json({ message: "A folder with this name already exists here" });
-      return;
+      if (existing) {
+        res
+          .status(400)
+          .json({ message: "A folder with this name already exists here" });
+        return;
+      }
+
+      folder.name = trimmedName;
     }
 
-    folder.name = trimmedName;
+    if (parentId !== undefined) {
+      // Prevent moving folder into itself
+      if (parentId === id) {
+        res.status(400).json({ message: "Cannot move folder into itself" });
+        return;
+      }
+      folder.parentId = parentId;
+    }
+
     await folder.save();
 
     res.status(200).json({
@@ -313,7 +320,7 @@ export const updateFile = async (
   try {
     const userId = req.userId;
     const { id } = req.params;
-    const { content, name } = req.body;
+    const { content, name, parentId } = req.body;
 
     if (!userId || !id) {
       res.status(401).json({ message: "Unauthorized" });
@@ -332,6 +339,10 @@ export const updateFile = async (
 
     if (name && typeof name === "string") {
       file.name = name.trim();
+    }
+
+    if (parentId && typeof parentId === "string") {
+      file.parentId = parentId;
     }
 
     await file.save();
