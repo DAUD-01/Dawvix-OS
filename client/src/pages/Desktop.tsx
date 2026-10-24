@@ -5,12 +5,15 @@ import DesktopIcon from "../components/desktop/DesktopIcon";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import WindowManager from "../components/window/WindowManager";
 import { useWindowStore } from "../stores/windowStore";
 
 export default function Desktop() {
   const [startOpen, setStartOpen] = useState(false);
+  const startButtonRef = useRef<HTMLButtonElement | null>(null);
+  const startMenuRef = useRef<HTMLDivElement | null>(null);
+
   const navigate = useNavigate();
 
   const logout = useAuthStore((state) => state.logout);
@@ -21,9 +24,30 @@ export default function Desktop() {
     navigate("/");
   };
 
+  // Close start menu when clicking outside
+  useEffect(() => {
+    if (!startOpen) return;
+
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        startMenuRef.current &&
+        !startMenuRef.current.contains(target) &&
+        startButtonRef.current &&
+        !startButtonRef.current.contains(target)
+      ) {
+        setStartOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [startOpen]);
+
   return (
     <div
-      onClick={() => setStartOpen(false)}
       className="
         h-screen
         w-screen
@@ -67,12 +91,14 @@ export default function Desktop() {
 
       {/* Taskbar & Start Menu */}
       <Taskbar
+        startButtonRef={startButtonRef}
         onStartClick={() => setStartOpen((prev) => !prev)}
         isStartOpen={startOpen}
       />
 
       {startOpen && (
         <StartMenu
+          menuRef={startMenuRef}
           onLogout={handleLogout}
           onClose={() => setStartOpen(false)}
         />

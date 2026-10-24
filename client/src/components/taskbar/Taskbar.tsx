@@ -1,14 +1,21 @@
 import Clock from "./Clock";
 import WindowList from "./WindowList";
+import type { RefObject } from "react";
 
 interface TaskbarProps {
   onStartClick: () => void;
   isStartOpen?: boolean;
+  startButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
-export default function Taskbar({ onStartClick, isStartOpen }: TaskbarProps) {
+export default function Taskbar({
+  onStartClick,
+  isStartOpen,
+  startButtonRef,
+}: TaskbarProps) {
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       className="
         fixed
         bottom-0
@@ -29,8 +36,12 @@ export default function Taskbar({ onStartClick, isStartOpen }: TaskbarProps) {
     >
       <div className="flex items-center gap-2 flex-1 h-full py-1">
         <button
+          ref={startButtonRef}
           type="button"
-          onClick={onStartClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onStartClick();
+          }}
           className={`
             flex items-center gap-2 px-3 h-9 rounded-lg font-medium text-xs transition duration-150 cursor-pointer
             ${

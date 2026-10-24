@@ -1,13 +1,15 @@
 import { useAuthStore } from "../../stores/authStore";
 import { useWindowStore } from "../../stores/windowStore";
 import { Folder, FileText, Settings, LogOut, User as UserIcon } from "lucide-react";
+import type { RefObject } from "react";
 
 interface StartMenuProps {
   onLogout: () => void;
   onClose: () => void;
+  menuRef?: RefObject<HTMLDivElement | null>;
 }
 
-export default function StartMenu({ onLogout, onClose }: StartMenuProps) {
+export default function StartMenu({ onLogout, onClose, menuRef }: StartMenuProps) {
   const user = useAuthStore((state) => state.user);
   const openWindow = useWindowStore((state) => state.openWindow);
 
@@ -39,6 +41,7 @@ export default function StartMenu({ onLogout, onClose }: StartMenuProps) {
 
   return (
     <div
+      ref={menuRef}
       onClick={(e) => e.stopPropagation()}
       className="
         fixed
@@ -46,7 +49,7 @@ export default function StartMenu({ onLogout, onClose }: StartMenuProps) {
         left-3
         w-72
         rounded-2xl
-        bg-slate-900/90
+        bg-slate-900/95
         backdrop-blur-2xl
         border
         border-slate-800
@@ -58,18 +61,14 @@ export default function StartMenu({ onLogout, onClose }: StartMenuProps) {
         flex-col
         gap-3
         select-none
-        animate-in
-        fade-in
-        slide-in-from-bottom-2
-        duration-150
       "
     >
       {/* User Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 text-cyan-400 border border-white/10">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 text-cyan-400 border border-white/10 shrink-0">
           <UserIcon size={18} />
         </div>
-        <div className="truncate text-left">
+        <div className="truncate text-left flex-1 min-w-0">
           <p className="text-sm font-semibold text-white truncate">
             {user?.username || "Dawvix User"}
           </p>
@@ -91,14 +90,14 @@ export default function StartMenu({ onLogout, onClose }: StartMenuProps) {
             onClick={() => handleLaunch(app.id, app.title)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/80 active:bg-slate-800 text-left transition duration-150 cursor-pointer group"
           >
-            <div className="p-1.5 rounded-lg bg-slate-800/60 group-hover:bg-slate-700/60 transition">
+            <div className="p-1.5 rounded-lg bg-slate-800/60 group-hover:bg-slate-700/60 transition shrink-0">
               {app.icon}
             </div>
-            <div>
-              <p className="text-xs font-medium text-slate-100 group-hover:text-cyan-300">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-slate-100 group-hover:text-cyan-300 truncate">
                 {app.title}
               </p>
-              <p className="text-[10px] text-slate-400">{app.description}</p>
+              <p className="text-[10px] text-slate-400 truncate">{app.description}</p>
             </div>
           </button>
         ))}
