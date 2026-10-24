@@ -170,6 +170,59 @@ export const createFolder = async (
   }
 };
 
+export const updateFolder = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!userId || !id) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      res.status(400).json({ message: "Folder name is required" });
+      return;
+    }
+
+    const folder: IFolder | null = await Folder.findById(String(id));
+    if (!folder || folder.ownerId.toString() !== userId) {
+      res.status(404).json({ message: "Folder not found" });
+      return;
+    }
+
+    const trimmedName = name.trim();
+    const existing = await Folder.findOne({
+      _id: { $ne: folder._id },
+      name: trimmedName,
+      parentId: folder.parentId,
+      ownerId: userId,
+    });
+
+    if (existing) {
+      res
+        .status(400)
+        .json({ message: "A folder with this name already exists here" });
+      return;
+    }
+
+    folder.name = trimmedName;
+    await folder.save();
+
+    res.status(200).json({
+      message: "Folder updated successfully",
+      folder,
+    });
+  } catch (error) {
+    console.error("updateFolder error:", error);
+    res.status(500).json({ message: "Failed to update folder" });
+  }
+};
+
 export const createFile = async (
   req: AuthRequest,
   res: Response,
