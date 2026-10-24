@@ -11,7 +11,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     if (!username || !email || !password) {
       res.status(400).json({
-        MessageChannel: "All fields are required",
+        message: "All fields are required",
       });
       return;
     }
@@ -43,12 +43,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       message: "User created successfully",
       user: {
         id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Register Error:", error);
 
     res.status(500).json({
       message: "Server error",
@@ -93,11 +94,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       token,
       user: {
         id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
       },
     });
   } catch (error) {
+    console.error("Login Error:", error);
     res.status(500).json({
       message: "Server error",
     });
@@ -114,8 +117,17 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       });
       return;
     }
-    res.status(200).json(user);
-  } catch {
+
+    res.status(200).json({
+      id: user._id,
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  } catch (error) {
+    console.error("GetMe Error:", error);
     res.status(500).json({
       message: "Server error",
     });

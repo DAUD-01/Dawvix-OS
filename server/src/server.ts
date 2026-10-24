@@ -11,11 +11,11 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRouter);
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Backend running");
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ status: "ok", name: "Dawvix OS Backend API" });
 });
 
-// 2. Connect to DB first, then start the server
+// Connect to DB and start server
 const startServer = async () => {
   try {
     await connectDB();
