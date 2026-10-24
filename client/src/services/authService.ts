@@ -45,3 +45,8 @@ export const getCurrentUser = async (token?: string) => {
 
   return response.data;
 };
+
+export const updateProfile = async (username: string) => {
+  const response = await api.put("/auth/profile", { username });
+  return response.data;
+};

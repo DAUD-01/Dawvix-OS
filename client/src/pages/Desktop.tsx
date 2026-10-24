@@ -4,6 +4,7 @@ import DesktopIcon from "../components/desktop/DesktopIcon";
 
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
+import { useSettingsStore } from "../stores/settingsStore";
 
 import { useState, useRef, useEffect } from "react";
 import WindowManager from "../components/window/WindowManager";
@@ -18,6 +19,7 @@ export default function Desktop() {
 
   const logout = useAuthStore((state) => state.logout);
   const openWindow = useWindowStore((state) => state.openWindow);
+  const wallpaper = useSettingsStore((state) => state.wallpaper);
 
   const handleLogout = () => {
     logout();
@@ -56,11 +58,13 @@ export default function Desktop() {
         bg-slate-950
         text-slate-100
         select-none
+        transition-all
+        duration-300
       "
       style={{
         backgroundImage: `
           radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.45) 0%, rgba(2, 6, 23, 0.85) 100%),
-          url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2560&q=80')
+          url('${wallpaper}')
         `,
         backgroundSize: "cover",
         backgroundPosition: "center",
