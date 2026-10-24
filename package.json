@@ -1,0 +1,20 @@
+{
+  "name": "dawvix-os",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dawvix OS - Web based virtual operating system",
+  "scripts": {
+    "dev": "npm run dev:client",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run start",
+    "build:client": "npm --prefix client run build",
+    "build": "npm run build:client"
+  },
+  "keywords": [
+    "web-os",
+    "react",
+    "virtual-desktop"
+  ],
+  "author": "",
+  "license": "ISC"
+}
