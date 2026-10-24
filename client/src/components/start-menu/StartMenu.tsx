@@ -1,6 +1,6 @@
 import { useAuthStore } from "../../stores/authStore";
 import { useWindowStore } from "../../stores/windowStore";
-import { Folder, FileText, Settings, LogOut, User as UserIcon } from "lucide-react";
+import { Folder, FileText, Settings, LogOut, User as UserIcon, Terminal } from "lucide-react";
 import type { RefObject } from "react";
 
 interface StartMenuProps {
@@ -32,10 +32,16 @@ export default function StartMenu({ onLogout, onClose, menuRef }: StartMenuProps
       icon: <FileText size={18} className="text-emerald-400" />,
     },
     {
+      id: "terminal",
+      title: "Terminal",
+      description: "Virtual Bash Shell & CLI",
+      icon: <Terminal size={18} className="text-cyan-400" />,
+    },
+    {
       id: "settings",
       title: "Settings",
       description: "System & Profile Preferences",
-      icon: <Settings size={18} className="text-cyan-400" />,
+      icon: <Settings size={18} className="text-purple-400" />,
     },
   ];
 

@@ -5,6 +5,7 @@ import { Maximize2, Minimize2, X } from "lucide-react";
 import FileExplorer from "../apps/FileExplorer";
 import NotesApp from "../apps/NotesApp";
 import SettingsApp from "../apps/SettingsApp";
+import TerminalApp from "../apps/TerminalApp";
 
 interface WindowProps {
   window: WindowData;
@@ -39,6 +40,8 @@ export default function Window({ window: win }: WindowProps) {
         );
       case "settings":
         return <SettingsApp />;
+      case "terminal":
+        return <TerminalApp />;
       default:
         return (
           <div className="flex h-full items-center justify-center p-6 text-slate-400">

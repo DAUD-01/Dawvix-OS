@@ -84,6 +84,11 @@ export default function Desktop() {
           onClick={() => openWindow("notes", "Notes")}
         />
         <DesktopIcon
+          icon="💻"
+          name="Terminal"
+          onClick={() => openWindow("terminal", "Terminal")}
+        />
+        <DesktopIcon
           icon="⚙️"
           name="Settings"
           onClick={() => openWindow("settings", "Settings")}
