@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Folder,
   FileText,
@@ -21,6 +21,9 @@ import {
   Download,
   FolderGit2,
   FileCheck,
+  Upload,
+  Eye,
+  X,
 } from "lucide-react";
 import {
   getDirectoryContents,
@@ -28,6 +31,7 @@ import {
   createFile,
   updateFolder,
   updateFile,
+  uploadFile,
   deleteItem,
   type FolderData,
   type FileData,
@@ -62,6 +66,7 @@ export default function FileExplorer() {
     type: "folder" | "file";
     name: string;
     size?: number;
+    content?: string;
   } | null>(null);
 
   const [clipboard, setClipboard] = useState<ClipboardItem | null>(null);
@@ -71,6 +76,14 @@ export default function FileExplorer() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFileModal, setShowNewFileModal] = useState(false);
   const [newFileName, setNewFileName] = useState("");
+
+  // Preview Modal
+  const [previewFile, setPreviewFile] = useState<FileData | null>(null);
+
+  // Drag and Drop & File Upload
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadDirectory = useCallback(
     async (folderId?: string) => {
@@ -134,7 +147,6 @@ export default function FileExplorer() {
     }
   };
 
-  // Jump directly to known user folders
   const handleQuickJump = (folderName: string) => {
     const match = folders.find(
       (f) => f.name.toLowerCase() === folderName.toLowerCase(),
@@ -180,6 +192,94 @@ export default function FileExplorer() {
         ?.response?.data?.message;
       alert(msg || "Failed to create file");
     }
+  };
+
+  // Upload handler
+  const processUploadFiles = async (fileList: FileList | File[]) => {
+    if (!currentFolderId) {
+      alert("Please navigate into a folder before uploading files.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const f of Array.from(fileList)) {
+        await new Promise<void>((resolve, reject) => {
+          const reader = new FileReader();
+          const isText =
+            f.type.startsWith("text/") ||
+            f.name.endsWith(".txt") ||
+            f.name.endsWith(".md") ||
+            f.name.endsWith(".json") ||
+            f.name.endsWith(".js") ||
+            f.name.endsWith(".ts");
+
+          if (isText) {
+            reader.readAsText(f);
+          } else {
+            reader.readAsDataURL(f);
+          }
+
+          reader.onload = async () => {
+            try {
+              const content = reader.result as string;
+              await uploadFile(
+                f.name,
+                content,
+                currentFolderId,
+                f.size,
+                f.type || "application/octet-stream",
+              );
+              resolve();
+            } catch (uploadErr) {
+              reject(uploadErr);
+            }
+          };
+
+          reader.onerror = (err) => reject(err);
+        });
+      }
+      loadDirectory(currentFolderId);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
+      alert(msg || "File upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await processUploadFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleDownloadFile = (file: FileData) => {
+    const element = document.createElement("a");
+    if (file.content.startsWith("data:")) {
+      element.href = file.content;
+    } else {
+      const blob = new Blob([file.content], {
+        type: file.mimeType || "text/plain",
+      });
+      element.href = URL.createObjectURL(blob);
+    }
+    element.download = file.name;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   const handleRename = async (
@@ -253,6 +353,25 @@ export default function FileExplorer() {
   };
 
   const handleOpenFile = (file: FileData) => {
+    const isImage =
+      file.name.match(/\.(png|jpg|jpeg|svg|gif|webp)$/i) ||
+      file.content.startsWith("data:image");
+
+    if (isImage) {
+      setPreviewFile(file);
+      return;
+    }
+
+    const isCode = file.name.match(/\.(js|ts|jsx|tsx|json|html|css)$/i);
+    if (isCode) {
+      openWindow("code", `Code - ${file.name}`, {
+        fileId: file.id,
+        fileName: file.name,
+        content: file.content,
+      });
+      return;
+    }
+
     openWindow("notes", `Notes - ${file.name}`, {
       fileId: file.id,
       fileName: file.name,
@@ -261,7 +380,7 @@ export default function FileExplorer() {
   };
 
   // Helper for file icons
-  const getFileIcon = (name: string) => {
+  const getFileIcon = (name: string, content?: string) => {
     const ext = name.split(".").pop()?.toLowerCase();
     switch (ext) {
       case "js":
@@ -277,6 +396,14 @@ export default function FileExplorer() {
       case "jpeg":
       case "svg":
       case "gif":
+      case "webp":
+        if (content && content.startsWith("data:image")) {
+          return (
+            <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-700 bg-slate-950">
+              <img src={content} alt={name} className="h-full w-full object-cover" />
+            </div>
+          );
+        }
         return <ImageIcon size={40} className="text-purple-400" />;
       default:
         return <FileText size={40} className="text-cyan-400" />;
@@ -291,7 +418,31 @@ export default function FileExplorer() {
   );
 
   return (
-    <div className="flex h-full flex-col bg-slate-900/70 text-slate-200 select-none">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex h-full flex-col bg-slate-900/70 text-slate-200 select-none relative ${
+        isDraggingOver ? "ring-2 ring-cyan-400 bg-cyan-950/20" : ""
+      }`}
+    >
+      {/* Hidden File Input for Native Upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={(e) => e.target.files && processUploadFiles(e.target.files)}
+        className="hidden"
+      />
+
+      {/* Drag and drop overlay hint */}
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-40 bg-cyan-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-cyan-300 pointer-events-none">
+          <Upload size={48} className="animate-bounce mb-2" />
+          <p className="font-semibold text-sm">Drop files to upload to this directory</p>
+        </div>
+      )}
+
       {/* Top Action Ribbon / Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 bg-slate-950/70 px-3 py-2 text-xs">
         {/* Navigation & Address Bar */}
@@ -312,7 +463,7 @@ export default function FileExplorer() {
             title="Refresh"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
           >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={loading || uploading ? "animate-spin" : ""} />
           </button>
 
           {/* Breadcrumb Path Address Bar */}
@@ -353,6 +504,17 @@ export default function FileExplorer() {
               className="h-7 w-28 sm:w-36 rounded-lg bg-slate-950/80 border border-slate-800 pl-7 pr-2 text-[11px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
+
+          {/* Upload Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload files from your computer (or drag & drop)"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition cursor-pointer text-[11px]"
+          >
+            <Upload size={12} />
+            <span className="hidden sm:inline">Upload</span>
+          </button>
 
           {/* Cut & Paste Buttons */}
           <button
@@ -518,7 +680,7 @@ export default function FileExplorer() {
               <p>
                 {searchQuery
                   ? `No items match "${searchQuery}"`
-                  : "This folder is empty"}
+                  : "This folder is empty. Drag & drop files here to upload."}
               </p>
             </div>
           ) : viewMode === "grid" ? (
@@ -615,7 +777,8 @@ export default function FileExplorer() {
                         id: file.id,
                         type: "file",
                         name: file.name,
-                        size: file.content ? file.content.length : 0,
+                        size: file.size || (file.content ? file.content.length : 0),
+                        content: file.content,
                       })
                     }
                     onDoubleClick={() => handleOpenFile(file)}
@@ -629,8 +792,8 @@ export default function FileExplorer() {
                       ${isCut ? "opacity-40" : "opacity-100"}
                     `}
                   >
-                    <div className="group-hover:scale-105 transition-transform">
-                      {getFileIcon(file.name)}
+                    <div className="group-hover:scale-105 transition-transform flex items-center justify-center">
+                      {getFileIcon(file.name, file.content)}
                     </div>
                     <span className="text-xs font-medium text-slate-200 text-center truncate w-full">
                       {file.name}
@@ -638,6 +801,28 @@ export default function FileExplorer() {
 
                     {/* Quick actions on hover */}
                     <div className="absolute top-1 right-1 flex items-center opacity-0 group-hover:opacity-100 transition gap-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewFile(file);
+                        }}
+                        title="Preview"
+                        className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                      >
+                        <Eye size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadFile(file);
+                        }}
+                        title="Download"
+                        className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                      >
+                        <Download size={11} />
+                      </button>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -775,7 +960,8 @@ export default function FileExplorer() {
                             id: file.id,
                             type: "file",
                             name: file.name,
-                            size: file.content ? file.content.length : 0,
+                            size: file.size || (file.content ? file.content.length : 0),
+                            content: file.content,
                           })
                         }
                         onDoubleClick={() => handleOpenFile(file)}
@@ -789,12 +975,40 @@ export default function FileExplorer() {
                             {file.name}
                           </span>
                         </td>
-                        <td className="py-2 text-slate-400">Document</td>
+                        <td className="py-2 text-slate-400">
+                          {file.mimeType || "Document"}
+                        </td>
                         <td className="py-2 text-slate-500">
-                          {file.content ? `${file.content.length} B` : "0 B"}
+                          {file.size
+                            ? `${(file.size / 1024).toFixed(1)} KB`
+                            : file.content
+                            ? `${file.content.length} B`
+                            : "0 B"}
                         </td>
                         <td className="py-2 pr-2 text-right">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewFile(file);
+                              }}
+                              title="Preview"
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                            >
+                              <Eye size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadFile(file);
+                              }}
+                              title="Download"
+                              className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                            >
+                              <Download size={12} />
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -856,6 +1070,52 @@ export default function FileExplorer() {
         </div>
         <span>Dawvix Virtual VFS</span>
       </div>
+
+      {/* Image / File Preview Modal */}
+      {previewFile && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+          <div className="relative max-h-full max-w-2xl w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="font-semibold text-white text-xs truncate">
+                Preview: {previewFile.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewFile(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto flex items-center justify-center min-h-60 max-h-96 bg-slate-950 rounded-xl p-2">
+              {previewFile.content.startsWith("data:image") ||
+              previewFile.name.match(/\.(png|jpg|jpeg|svg|gif|webp)$/i) ? (
+                <img
+                  src={previewFile.content}
+                  alt={previewFile.name}
+                  className="max-h-80 max-w-full object-contain rounded-lg"
+                />
+              ) : (
+                <pre className="whitespace-pre-wrap font-mono text-xs text-slate-300 p-3 max-h-80 overflow-y-auto w-full">
+                  {previewFile.content || "(empty file)"}
+                </pre>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1 text-xs">
+              <button
+                type="button"
+                onClick={() => handleDownloadFile(previewFile)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold"
+              >
+                <Download size={13} />
+                <span>Download</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Folder Modal */}
       {showNewFolderModal && (

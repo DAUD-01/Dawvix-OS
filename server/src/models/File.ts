@@ -5,6 +5,8 @@ export interface IFile extends Document {
   content: string;
   parentId: string;
   ownerId: Types.ObjectId | string;
+  size?: number;
+  mimeType?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +30,14 @@ const FileSchema = new Schema<IFile>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    size: {
+      type: Number,
+      default: 0,
+    },
+    mimeType: {
+      type: String,
+      default: "text/plain",
     },
   },
   {

@@ -210,7 +210,6 @@ export const updateFolder = async (
     }
 
     if (parentId !== undefined) {
-      // Prevent moving folder into itself
       if (parentId === id) {
         res.status(400).json({ message: "Cannot move folder into itself" });
         return;
@@ -284,6 +283,71 @@ export const createFile = async (
   } catch (error) {
     console.error("createFile error:", error);
     res.status(500).json({ message: "Failed to create file" });
+  }
+};
+
+export const uploadFile = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const { name, content, parentId, size, mimeType } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    if (!name || !content || !parentId) {
+      res
+        .status(400)
+        .json({ message: "File name, content, and parentId are required" });
+      return;
+    }
+
+    const trimmedName = name.trim();
+
+    // Check duplicate
+    const existing = await File.findOne({
+      name: trimmedName,
+      parentId,
+      ownerId: userId,
+    });
+
+    if (existing) {
+      const parts = trimmedName.split(".");
+      const ext = parts.length > 1 ? `.${parts.pop()}` : "";
+      const base = parts.join(".");
+      const newName = `${base} (${Date.now().toString().slice(-4)})${ext}`;
+      const file = await File.create({
+        name: newName,
+        content,
+        parentId,
+        ownerId: userId,
+        size: size || content.length,
+        mimeType: mimeType || "application/octet-stream",
+      });
+      res.status(201).json({ message: "File uploaded successfully", file });
+      return;
+    }
+
+    const file = await File.create({
+      name: trimmedName,
+      content,
+      parentId,
+      ownerId: userId,
+      size: size || content.length,
+      mimeType: mimeType || "application/octet-stream",
+    });
+
+    res.status(201).json({
+      message: "File uploaded successfully",
+      file,
+    });
+  } catch (error) {
+    console.error("uploadFile error:", error);
+    res.status(500).json({ message: "Failed to upload file" });
   }
 };
 

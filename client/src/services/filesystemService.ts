@@ -17,6 +17,8 @@ export interface FileData {
   content: string;
   parentId: string;
   ownerId: string;
+  size?: number;
+  mimeType?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -73,6 +75,23 @@ export const createFile = async (
     name,
     parentId,
     content,
+  });
+  return response.data;
+};
+
+export const uploadFile = async (
+  name: string,
+  content: string,
+  parentId: string,
+  size?: number,
+  mimeType?: string,
+): Promise<{ message: string; file: FileData }> => {
+  const response = await api.post("/filesystem/upload", {
+    name,
+    content,
+    parentId,
+    size,
+    mimeType,
   });
   return response.data;
 };
