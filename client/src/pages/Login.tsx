@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../services/authService";
 import { useAuthStore } from "../stores/authStore";
@@ -10,13 +10,22 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const { setUser, setToken } = useAuthStore();
+  const { token, setUser, setToken } = useAuthStore();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (token) {
+      navigate("/desktop", { replace: true });
+    }
+  }, [token, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setLoading(true);
 
     try {
@@ -27,11 +36,12 @@ export default function Login() {
 
       if (rememberMe) {
         localStorage.setItem("token", data.token);
+        sessionStorage.removeItem("token");
       } else {
         sessionStorage.setItem("token", data.token);
+        localStorage.removeItem("token");
       }
 
-      // Redirect to desktop route automatically
       navigate("/desktop");
     } catch (err: unknown) {
       console.error("Login failed:", err);
@@ -82,10 +92,10 @@ export default function Login() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Welcome back
+              Dawvix OS
             </h1>
             <p className="mt-2 text-sm text-slate-400">
-              Authenticate to access your workspace
+              Sign in to access your desktop workspace
             </p>
           </div>
 
@@ -103,6 +113,13 @@ export default function Login() {
                 />
               </svg>
               <span>{error}</span>
+            </div>
+          )}
+
+          {/* Info Notice */}
+          {notice && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-3.5 text-xs text-cyan-300">
+              <span>{notice}</span>
             </div>
           )}
 
@@ -138,7 +155,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none cursor-pointer"
                 >
                   {showPassword ? (
                     <svg
@@ -186,23 +203,28 @@ export default function Login() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500/20 focus:ring-offset-0"
+                  className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500/20 focus:ring-offset-0 cursor-pointer"
                 />
                 Remember me
               </label>
-              <Link
-                to="/forgot-password"
-                className="font-medium text-cyan-400 hover:text-cyan-300 hover:underline"
+              <button
+                type="button"
+                onClick={() =>
+                  setNotice(
+                    "Password recovery is not yet configured on this server.",
+                  )
+                }
+                className="font-medium text-cyan-400 hover:text-cyan-300 hover:underline cursor-pointer"
               >
                 Forgot password?
-              </Link>
+              </button>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 flex w-full items-center justify-center rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition duration-200 hover:bg-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+              className="mt-2 flex w-full items-center justify-center rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition duration-200 hover:bg-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -225,7 +247,7 @@ export default function Login() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  Unlocking...
+                  Authenticating...
                 </span>
               ) : (
                 "Sign In"

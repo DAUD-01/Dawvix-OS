@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { registerUser } from "../services/authService";
+import { useAuthStore } from "../stores/authStore";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -11,7 +12,14 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { token } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) {
+      navigate("/desktop", { replace: true });
+    }
+  }, [token, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +33,13 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const data = await registerUser(username, email, password);
-      console.log("Registered user:", data);
+      await registerUser(username.trim(), email.trim(), password);
 
       // Redirect to login page upon successful account creation
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (err: unknown) {
       console.error("Registration failed:", err);
 
-      // Safely extract error message from various possible shapes
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message || (err as { message?: string })?.message;
@@ -76,7 +82,7 @@ export default function Register() {
               Create Profile
             </h1>
             <p className="mt-2 text-sm text-slate-400">
-              Set up your account to access the workspace
+              Set up your Dawvix OS workspace account
             </p>
           </div>
 
@@ -106,6 +112,7 @@ export default function Register() {
               <input
                 type="text"
                 required
+                minLength={3}
                 placeholder="dawood"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -135,6 +142,7 @@ export default function Register() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  minLength={6}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -143,7 +151,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none cursor-pointer"
                 >
                   {showPassword ? (
                     <svg
@@ -191,13 +199,13 @@ export default function Register() {
                   type="checkbox"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500/20 focus:ring-offset-0"
+                  className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500/20 focus:ring-offset-0 cursor-pointer"
                 />
                 <span>
                   I agree to the{" "}
-                  <a href="#" className="text-cyan-400 hover:underline">
+                  <span className="text-cyan-400">
                     Terms of Service
-                  </a>
+                  </span>
                 </span>
               </label>
             </div>
@@ -206,7 +214,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 flex w-full items-center justify-center rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition duration-200 hover:bg-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+              className="mt-2 flex w-full items-center justify-center rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition duration-200 hover:bg-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <span className="flex items-center gap-2">

@@ -1,23 +1,26 @@
 import { create } from "zustand";
 
-interface User {
+export interface User {
   id: string;
+  _id?: string;
   username: string;
   email: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
 
-  setUser: (user: User) => void;
-  setToken: (token: string) => void;
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem("token"),
+  token: localStorage.getItem("token") || sessionStorage.getItem("token"),
 
   setUser: (user) => set({ user }),
 
@@ -25,6 +28,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
 
     set({
       user: null,
