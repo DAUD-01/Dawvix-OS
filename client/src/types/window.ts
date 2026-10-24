@@ -18,4 +18,6 @@ export interface WindowData {
 
   previousWidth?: number;
   previousHeight?: number;
+
+  params?: Record<string, unknown>;
 }

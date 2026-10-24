@@ -68,7 +68,7 @@ export default function Desktop() {
       }}
     >
       {/* Desktop Canvas / App Icons */}
-      <div className="absolute top-4 left-4 flex flex-col gap-3 z-10">
+      <div className="absolute top-5 left-5 flex flex-col gap-3.5 z-10">
         <DesktopIcon
           icon="📁"
           name="Files"
@@ -86,8 +86,13 @@ export default function Desktop() {
         />
       </div>
 
-      {/* Windows Manager */}
-      <WindowManager />
+      {/* Desktop Workspace for Windows (bounds isolated above taskbar) */}
+      <div
+        id="desktop-workspace"
+        className="absolute inset-0 bottom-12 overflow-hidden pointer-events-none z-20"
+      >
+        <WindowManager />
+      </div>
 
       {/* Taskbar & Start Menu */}
       <Taskbar

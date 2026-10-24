@@ -5,13 +5,18 @@ interface WindowStore {
   windows: WindowData[];
   activeWindowId: string | null;
 
-  openWindow: (id: string, title: string) => void;
+  openWindow: (
+    id: string,
+    title: string,
+    params?: Record<string, unknown>,
+  ) => void;
   closeWindow: (id: string) => void;
   focusWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
   maximizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   toggleWindowMinimize: (id: string) => void;
+  updateWindowParams: (id: string, params: Record<string, unknown>) => void;
   updateWindowGeometry: (
     id: string,
     x: number,
@@ -27,8 +32,8 @@ export const useWindowStore = create<WindowStore>((set) => ({
 
   minimizeWindow: (id) =>
     set((state) => ({
-      windows: state.windows.map((window) =>
-        window.id === id ? { ...window, minimized: true } : window,
+      windows: state.windows.map((win) =>
+        win.id === id ? { ...win, minimized: true } : win,
       ),
       activeWindowId: state.activeWindowId === id ? null : state.activeWindowId,
     })),
@@ -63,29 +68,42 @@ export const useWindowStore = create<WindowStore>((set) => ({
 
   maximizeWindow: (id) =>
     set((state) => ({
-      windows: state.windows.map((window) => {
-        if (window.id !== id) {
-          return window;
+      windows: state.windows.map((win) => {
+        if (win.id !== id) {
+          return win;
         }
 
-        if (!window.maximized) {
+        if (!win.maximized) {
           return {
-            ...window,
-            previousX: window.x,
-            previousY: window.y,
-            previousWidth: window.width,
-            previousHeight: window.height,
+            ...win,
+            previousX: win.x,
+            previousY: win.y,
+            previousWidth: win.width,
+            previousHeight: win.height,
             maximized: true,
           };
         }
 
+        const fallbackWidth = Math.min(
+          680,
+          typeof globalThis.window !== "undefined"
+            ? globalThis.window.innerWidth - 80
+            : 680,
+        );
+        const fallbackHeight = Math.min(
+          480,
+          typeof globalThis.window !== "undefined"
+            ? globalThis.window.innerHeight - 140
+            : 480,
+        );
+
         return {
-          ...window,
+          ...win,
           maximized: false,
-          x: window.previousX ?? 150,
-          y: window.previousY ?? 100,
-          width: window.previousWidth ?? 520,
-          height: window.previousHeight ?? 380,
+          x: win.previousX ?? 80,
+          y: win.previousY ?? 60,
+          width: win.previousWidth ?? fallbackWidth,
+          height: win.previousHeight ?? fallbackHeight,
         };
       }),
     })),
@@ -94,31 +112,36 @@ export const useWindowStore = create<WindowStore>((set) => ({
     set((state) => {
       const highestZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
       return {
-        windows: state.windows.map((window) =>
-          window.id === id
+        windows: state.windows.map((win) =>
+          win.id === id
             ? {
-                ...window,
+                ...win,
                 minimized: false,
                 zIndex: highestZ + 1,
               }
-            : window,
+            : win,
         ),
         activeWindowId: id,
       };
     }),
 
-  openWindow: (id, title) =>
+  openWindow: (id, title, params) =>
     set((state) => {
       const highestZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
       const exists = state.windows.find((w) => w.id === id);
 
       if (exists) {
-        // Unminimize if needed and bring to front
+        // Bring to front, unminimize, and update title / params
         return {
           windows: state.windows.map((w) =>
             w.id === id
               ? {
                   ...w,
+                  title: title || w.title,
+                  params:
+                    params !== undefined
+                      ? { ...w.params, ...params }
+                      : w.params,
                   minimized: false,
                   zIndex: highestZ + 1,
                 }
@@ -128,10 +151,28 @@ export const useWindowStore = create<WindowStore>((set) => ({
         };
       }
 
-      // Stagger new window position
-      const offsetIndex = state.windows.length % 8;
-      const initialX = Math.min(100 + offsetIndex * 30, window.innerWidth - 560);
-      const initialY = Math.min(80 + offsetIndex * 30, window.innerHeight - 440);
+      // Calculate initial cascading dimensions and coordinates
+      const screenW =
+        typeof globalThis.window !== "undefined"
+          ? globalThis.window.innerWidth
+          : 1280;
+      const screenH =
+        typeof globalThis.window !== "undefined"
+          ? globalThis.window.innerHeight
+          : 800;
+
+      const defaultW = Math.min(660, screenW - 80);
+      const defaultH = Math.min(460, screenH - 120);
+
+      const cascadeIndex = state.windows.length % 6;
+      const initialX = Math.max(
+        30,
+        Math.min(60 + cascadeIndex * 36, screenW - defaultW - 40),
+      );
+      const initialY = Math.max(
+        20,
+        Math.min(40 + cascadeIndex * 36, screenH - defaultH - 80),
+      );
 
       return {
         windows: [
@@ -142,15 +183,28 @@ export const useWindowStore = create<WindowStore>((set) => ({
             minimized: false,
             maximized: false,
             zIndex: highestZ + 1,
-            x: Math.max(20, initialX),
-            y: Math.max(20, initialY),
-            width: 540,
-            height: 380,
+            x: initialX,
+            y: initialY,
+            width: defaultW,
+            height: defaultH,
+            params,
           },
         ],
         activeWindowId: id,
       };
     }),
+
+  updateWindowParams: (id, params) =>
+    set((state) => ({
+      windows: state.windows.map((w) =>
+        w.id === id
+          ? {
+              ...w,
+              params: { ...w.params, ...params },
+            }
+          : w,
+      ),
+    })),
 
   closeWindow: (id) =>
     set((state) => ({
@@ -160,16 +214,16 @@ export const useWindowStore = create<WindowStore>((set) => ({
 
   updateWindowGeometry: (id, x, y, width, height) =>
     set((state) => ({
-      windows: state.windows.map((window) =>
-        window.id === id
+      windows: state.windows.map((win) =>
+        win.id === id
           ? {
-              ...window,
+              ...win,
               x,
               y,
               width,
               height,
             }
-          : window,
+          : win,
       ),
     })),
 

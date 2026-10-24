@@ -44,6 +44,14 @@ export const createFolder = async (
   return response.data;
 };
 
+export const updateFolder = async (
+  id: string,
+  name: string,
+): Promise<{ message: string; folder: FolderData }> => {
+  const response = await api.put(`/filesystem/folder/${id}`, { name });
+  return response.data;
+};
+
 export const createFile = async (
   name: string,
   parentId: string,

@@ -18,6 +18,8 @@ export default function Window({ window: win }: WindowProps) {
   const updateWindowGeometry = useWindowStore(
     (state) => state.updateWindowGeometry,
   );
+  const activeWindowId = useWindowStore((state) => state.activeWindowId);
+  const isActive = activeWindowId === win.id;
 
   if (win.minimized) {
     return null;
@@ -28,7 +30,13 @@ export default function Window({ window: win }: WindowProps) {
       case "files":
         return <FileExplorer />;
       case "notes":
-        return <NotesApp />;
+        return (
+          <NotesApp
+            initialFileId={win.params?.fileId as string | undefined}
+            initialFileName={win.params?.fileName as string | undefined}
+            initialContent={win.params?.content as string | undefined}
+          />
+        );
       case "settings":
         return <SettingsApp />;
       default:
@@ -52,8 +60,8 @@ export default function Window({ window: win }: WindowProps) {
         y: win.maximized ? 0 : win.y,
       }}
       size={{
-        width: win.maximized ? "100vw" : win.width,
-        height: win.maximized ? "calc(100vh - 48px)" : win.height,
+        width: win.maximized ? "100%" : win.width,
+        height: win.maximized ? "100%" : win.height,
       }}
       onDragStop={(_, data) => {
         updateWindowGeometry(win.id, data.x, data.y, win.width, win.height);
@@ -68,10 +76,22 @@ export default function Window({ window: win }: WindowProps) {
         );
       }}
       minWidth={360}
-      minHeight={260}
+      minHeight={240}
       bounds="parent"
       dragHandleClassName="window-title-bar"
-      className="bg-slate-900/90 border border-slate-700/70 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col"
+      className={`
+        pointer-events-auto
+        bg-slate-900/95
+        border
+        ${isActive ? "border-cyan-500/50 shadow-2xl shadow-cyan-500/10" : "border-slate-800 shadow-xl"}
+        ${win.maximized ? "rounded-none" : "rounded-xl"}
+        overflow-hidden
+        backdrop-blur-2xl
+        flex
+        flex-col
+        transition-[border-color,box-shadow]
+        duration-150
+      `}
       disableDragging={win.maximized}
       enableResizing={!win.maximized}
       style={{
@@ -81,14 +101,31 @@ export default function Window({ window: win }: WindowProps) {
     >
       {/* Title Bar */}
       <div
-        className="window-title-bar h-10 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between px-3 text-slate-200 select-none cursor-move shrink-0"
+        className={`
+          window-title-bar
+          h-10
+          flex
+          items-center
+          justify-between
+          px-3
+          select-none
+          cursor-move
+          shrink-0
+          border-b
+          transition-colors
+          duration-150
+          ${isActive ? "bg-slate-950/90 border-slate-700/80 text-white" : "bg-slate-950/70 border-slate-800/80 text-slate-300"}
+        `}
         onDoubleClick={() => maximizeWindow(win.id)}
       >
-        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide">
-          <span className="text-slate-100">{win.title}</span>
+        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide truncate">
+          <span className="truncate">{win.title}</span>
         </div>
 
-        <div className="flex items-center gap-1.5" onMouseDown={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-1.5 shrink-0"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             onClick={(e) => {
@@ -110,7 +147,7 @@ export default function Window({ window: win }: WindowProps) {
             title={win.maximized ? "Restore" : "Maximize"}
             className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-md transition cursor-pointer"
           >
-            <Maximize2 size={13} />
+            {win.maximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
           </button>
 
           <button
@@ -128,7 +165,7 @@ export default function Window({ window: win }: WindowProps) {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden text-left">
+      <div className="flex-1 overflow-hidden text-left bg-slate-900/40">
         {renderContent()}
       </div>
     </Rnd>
