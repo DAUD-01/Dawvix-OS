@@ -1,6 +1,7 @@
 import StartMenu from "../components/start-menu/StartMenu";
 import Taskbar from "../components/taskbar/Taskbar";
 import DesktopIcon from "../components/desktop/DesktopIcon";
+import SpotlightSearch from "../components/search/SpotlightSearch";
 
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
@@ -12,6 +13,8 @@ import { useWindowStore } from "../stores/windowStore";
 
 export default function Desktop() {
   const [startOpen, setStartOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const startButtonRef = useRef<HTMLButtonElement | null>(null);
   const startMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,6 +50,22 @@ export default function Desktop() {
       window.removeEventListener("mousedown", handlePointerDown);
     };
   }, [startOpen]);
+
+  // Global Keyboard Shortcuts (Ctrl+Space or Cmd+K for Spotlight)
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      if (
+        ((e.ctrlKey || e.metaKey) && e.code === "Space") ||
+        ((e.ctrlKey || e.metaKey) && e.key === "k")
+      ) {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalShortcuts);
+    return () => window.removeEventListener("keydown", handleGlobalShortcuts);
+  }, []);
 
   return (
     <div
@@ -113,6 +132,13 @@ export default function Desktop() {
         startButtonRef={startButtonRef}
         onStartClick={() => setStartOpen((prev) => !prev)}
         isStartOpen={startOpen}
+        onSearchClick={() => setSearchOpen(true)}
+      />
+
+      {/* Spotlight Search Overlay */}
+      <SpotlightSearch
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
       />
 
       {startOpen && (

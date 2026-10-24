@@ -1,17 +1,20 @@
 import Clock from "./Clock";
 import WindowList from "./WindowList";
+import { Search } from "lucide-react";
 import type { RefObject } from "react";
 
 interface TaskbarProps {
   onStartClick: () => void;
   isStartOpen?: boolean;
   startButtonRef?: RefObject<HTMLButtonElement | null>;
+  onSearchClick?: () => void;
 }
 
 export default function Taskbar({
   onStartClick,
   isStartOpen,
   startButtonRef,
+  onSearchClick,
 }: TaskbarProps) {
   return (
     <div
@@ -35,6 +38,7 @@ export default function Taskbar({
       "
     >
       <div className="flex items-center gap-2 flex-1 h-full py-1">
+        {/* Start Button */}
         <button
           ref={startButtonRef}
           type="button"
@@ -55,6 +59,22 @@ export default function Taskbar({
             D
           </div>
           <span>Start</span>
+        </button>
+
+        {/* Spotlight Search Trigger */}
+        <button
+          type="button"
+          onClick={onSearchClick}
+          title="Search files, apps & settings (Ctrl + Space)"
+          className="flex items-center gap-2 px-2.5 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs border border-white/5 transition cursor-pointer"
+        >
+          <Search size={14} className="text-cyan-400" />
+          <span className="hidden md:inline text-slate-400 text-[11px]">
+            Search...
+          </span>
+          <span className="hidden lg:inline text-[10px] text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+            Ctrl+Space
+          </span>
         </button>
 
         <div className="h-4 w-px bg-slate-800 mx-1" />
