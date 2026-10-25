@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { useSettingsStore, WALLPAPERS } from "../../stores/settingsStore";
+import { useNotificationStore } from "../../stores/notificationStore";
 import { updateProfile } from "../../services/authService";
 
 export default function SettingsApp() {
@@ -45,6 +46,11 @@ export default function SettingsApp() {
       const data = await updateProfile(newUsername.trim());
       setUser(data.user);
       setUsernameMessage("Username updated successfully!");
+      useNotificationStore.getState().notify({
+        title: "Profile Updated",
+        message: `Username changed to "${newUsername.trim()}"`,
+        type: "success",
+      });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message;

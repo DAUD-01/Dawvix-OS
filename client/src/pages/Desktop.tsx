@@ -2,10 +2,13 @@ import StartMenu from "../components/start-menu/StartMenu";
 import Taskbar from "../components/taskbar/Taskbar";
 import DesktopIcon from "../components/desktop/DesktopIcon";
 import SpotlightSearch from "../components/search/SpotlightSearch";
+import ToastContainer from "../components/notifications/ToastContainer";
+import NotificationCenter from "../components/notifications/NotificationCenter";
 
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useSettingsStore } from "../stores/settingsStore";
+import { useNotificationStore } from "../stores/notificationStore";
 
 import { useState, useRef, useEffect } from "react";
 import WindowManager from "../components/window/WindowManager";
@@ -23,6 +26,7 @@ export default function Desktop() {
   const logout = useAuthStore((state) => state.logout);
   const openWindow = useWindowStore((state) => state.openWindow);
   const wallpaper = useSettingsStore((state) => state.wallpaper);
+  const { isCenterOpen, setCenterOpen } = useNotificationStore();
 
   const handleLogout = () => {
     logout();
@@ -140,6 +144,14 @@ export default function Desktop() {
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
       />
+
+      {/* Toast Notifications */}
+      <ToastContainer />
+
+      {/* Action & Notification Center */}
+      {isCenterOpen && (
+        <NotificationCenter onClose={() => setCenterOpen(false)} />
+      )}
 
       {startOpen && (
         <StartMenu

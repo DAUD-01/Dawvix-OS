@@ -38,6 +38,7 @@ import {
 } from "../../services/filesystemService";
 import { useAuthStore } from "../../stores/authStore";
 import { useWindowStore } from "../../stores/windowStore";
+import { useNotificationStore } from "../../stores/notificationStore";
 
 interface ClipboardItem {
   id: string;
@@ -163,10 +164,16 @@ export default function FileExplorer() {
     if (!newFolderName.trim()) return;
 
     try {
-      await createFolder(newFolderName.trim(), currentFolderId);
+      const created = newFolderName.trim();
+      await createFolder(created, currentFolderId);
       setNewFolderName("");
       setShowNewFolderModal(false);
       loadDirectory(currentFolderId);
+      useNotificationStore.getState().notify({
+        title: "Folder Created",
+        message: `Created folder "${created}"`,
+        type: "success",
+      });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message;
@@ -183,10 +190,16 @@ export default function FileExplorer() {
         alert("Cannot create file at filesystem root. Navigate into a folder first.");
         return;
       }
-      await createFile(newFileName.trim(), currentFolderId);
+      const created = newFileName.trim();
+      await createFile(created, currentFolderId);
       setNewFileName("");
       setShowNewFileModal(false);
       loadDirectory(currentFolderId);
+      useNotificationStore.getState().notify({
+        title: "File Created",
+        message: `Created file "${created}"`,
+        type: "success",
+      });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message;
@@ -239,7 +252,13 @@ export default function FileExplorer() {
           reader.onerror = (err) => reject(err);
         });
       }
+      const targetFolderName = path[path.length - 1]?.name || "folder";
       loadDirectory(currentFolderId);
+      useNotificationStore.getState().notify({
+        title: "Upload Completed",
+        message: `Uploaded ${fileList.length} file(s) to ${targetFolderName}`,
+        type: "success",
+      });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message;
@@ -322,6 +341,11 @@ export default function FileExplorer() {
     try {
       await deleteItem(type, id);
       loadDirectory(currentFolderId);
+      useNotificationStore.getState().notify({
+        title: "Item Deleted",
+        message: `Deleted ${type} "${name}"`,
+        type: "warning",
+      });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message;

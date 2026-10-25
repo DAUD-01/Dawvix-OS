@@ -21,6 +21,7 @@ import {
   getDirectoryContents,
   type FileData,
 } from "../../services/filesystemService";
+import { useNotificationStore } from "../../stores/notificationStore";
 
 interface NotesAppProps {
   initialFileId?: string;
@@ -109,6 +110,11 @@ export default function NotesApp({
         await updateFile(fileId, content);
         setSaved(true);
         setStatusMessage("Saved to filesystem");
+        useNotificationStore.getState().notify({
+          title: "Note Saved",
+          message: `Saved changes to "${fileName}"`,
+          type: "success",
+        });
       } else {
         const destFolderId = notesFolderId;
         if (!destFolderId) {
@@ -125,6 +131,11 @@ export default function NotesApp({
         setSaved(true);
         setStatusMessage(`Saved to /notes/${result.file.name}`);
         loadNotesFromFilesystem();
+        useNotificationStore.getState().notify({
+          title: "Note Saved",
+          message: `Created note "${result.file.name}"`,
+          type: "success",
+        });
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })

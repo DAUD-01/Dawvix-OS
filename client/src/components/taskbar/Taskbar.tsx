@@ -1,7 +1,8 @@
 import Clock from "./Clock";
 import WindowList from "./WindowList";
-import { Search } from "lucide-react";
+import { Search, Bell, Wifi, Volume2 } from "lucide-react";
 import type { RefObject } from "react";
+import { useNotificationStore } from "../../stores/notificationStore";
 
 interface TaskbarProps {
   onStartClick: () => void;
@@ -16,6 +17,8 @@ export default function Taskbar({
   startButtonRef,
   onSearchClick,
 }: TaskbarProps) {
+  const { isCenterOpen, toggleCenter, unreadCount } = useNotificationStore();
+
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -82,8 +85,38 @@ export default function Taskbar({
         <WindowList />
       </div>
 
-      <div className="flex items-center gap-2">
-        <Clock />
+      {/* System Tray */}
+      <div className="flex items-center gap-1.5 text-slate-400 pr-1">
+        <div className="hidden sm:flex items-center gap-1.5 px-1 py-1 text-slate-400">
+          <Wifi size={14} className="hover:text-cyan-400 transition cursor-default" />
+          <Volume2 size={14} className="hover:text-cyan-400 transition cursor-default" />
+        </div>
+
+        <button
+          type="button"
+          onClick={toggleCenter}
+          title="Notifications & Quick Settings"
+          className={`relative p-1.5 rounded-lg transition duration-150 flex items-center justify-center cursor-pointer ${
+            isCenterOpen
+              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+              : "hover:bg-white/10 text-slate-300 hover:text-white"
+          }`}
+        >
+          <Bell size={15} />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 ring-2 ring-slate-950 animate-pulse" />
+          )}
+        </button>
+
+        <div className="h-4 w-px bg-slate-800 mx-0.5" />
+
+        <button
+          type="button"
+          onClick={toggleCenter}
+          className="hover:bg-white/5 rounded-md transition cursor-pointer"
+        >
+          <Clock />
+        </button>
       </div>
     </div>
   );
