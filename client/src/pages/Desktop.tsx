@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useNotificationStore } from "../stores/notificationStore";
+import { useSocketStore } from "../stores/socketStore";
 
 import { useState, useRef, useEffect } from "react";
 import WindowManager from "../components/window/WindowManager";
@@ -23,10 +24,19 @@ export default function Desktop() {
 
   const navigate = useNavigate();
 
+  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const openWindow = useWindowStore((state) => state.openWindow);
   const wallpaper = useSettingsStore((state) => state.wallpaper);
   const { isCenterOpen, setCenterOpen } = useNotificationStore();
+  const { initSocket, cleanupSocket } = useSocketStore();
+
+  useEffect(() => {
+    if (user) {
+      initSocket({ id: user.id || "local-user", username: user.username });
+    }
+    return () => cleanupSocket();
+  }, [user, initSocket, cleanupSocket]);
 
   const handleLogout = () => {
     logout();

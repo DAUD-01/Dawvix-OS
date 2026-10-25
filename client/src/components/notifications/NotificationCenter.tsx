@@ -12,8 +12,10 @@ import {
   Wifi,
   Moon,
   Sliders,
+  Users,
 } from "lucide-react";
 import { useWindowStore } from "../../stores/windowStore";
+import { useSocketStore } from "../../stores/socketStore";
 
 interface NotificationCenterProps {
   onClose: () => void;
@@ -22,6 +24,7 @@ interface NotificationCenterProps {
 export default function NotificationCenter({ onClose }: NotificationCenterProps) {
   const { notifications, clearNotification, clearAll } = useNotificationStore();
   const { openWindow } = useWindowStore();
+  const { onlineUsers } = useSocketStore();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -127,6 +130,20 @@ export default function NotificationCenter({ onClose }: NotificationCenterProps)
           <Sliders size={16} />
           <span className="text-[10px] font-medium mt-1">Config</span>
         </button>
+      </div>
+
+      {/* Online Users Presence Bar */}
+      <div className="px-3.5 py-2 border-b border-white/5 bg-slate-900/50 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1.5 text-slate-300">
+          <Users size={14} className="text-cyan-400" />
+          <span className="font-medium text-[11px]">Real-time Presence</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[11px] font-mono text-emerald-300">
+            {onlineUsers.length > 0 ? `${onlineUsers.length} Online` : "Connected"}
+          </span>
+        </div>
       </div>
 
       {/* Notification Stream */}
