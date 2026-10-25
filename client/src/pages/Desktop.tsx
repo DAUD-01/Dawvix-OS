@@ -121,6 +121,11 @@ export default function Desktop() {
           name="Settings"
           onClick={() => openWindow("settings", "Settings")}
         />
+        <DesktopIcon
+          icon="📊"
+          name="Monitor"
+          onClick={() => openWindow("monitor", "Task Manager")}
+        />
       </div>
 
       {/* Desktop Workspace for Windows (bounds isolated above taskbar) */}

@@ -7,6 +7,7 @@ import NotesApp from "../apps/NotesApp";
 import SettingsApp from "../apps/SettingsApp";
 import TerminalApp from "../apps/TerminalApp";
 import CodeEditorApp from "../apps/CodeEditorApp";
+import SystemMonitorApp from "../apps/SystemMonitorApp";
 
 interface WindowProps {
   window: WindowData;
@@ -45,6 +46,9 @@ export default function Window({ window: win }: WindowProps) {
         return <TerminalApp />;
       case "code":
         return <CodeEditorApp />;
+      case "monitor":
+      case "system-monitor":
+        return <SystemMonitorApp />;
       default:
         return (
           <div className="flex h-full items-center justify-center p-6 text-slate-400">

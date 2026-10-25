@@ -8,6 +8,7 @@ import {
   User as UserIcon,
   Terminal,
   Code2,
+  Activity,
 } from "lucide-react";
 import type { RefObject } from "react";
 
@@ -56,6 +57,12 @@ export default function StartMenu({ onLogout, onClose, menuRef }: StartMenuProps
       title: "Settings",
       description: "System & Profile Preferences",
       icon: <Settings size={18} className="text-purple-400" />,
+    },
+    {
+      id: "monitor",
+      title: "Task Manager",
+      description: "Processes & Performance Monitor",
+      icon: <Activity size={18} className="text-emerald-400" />,
     },
   ];
 
