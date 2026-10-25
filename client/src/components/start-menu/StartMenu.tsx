@@ -9,8 +9,10 @@ import {
   Terminal,
   Code2,
   Activity,
+  ShoppingBag,
 } from "lucide-react";
 import type { RefObject } from "react";
+import { useAppRegistryStore, STORE_CATALOG } from "../../sdk/appRegistry";
 
 interface StartMenuProps {
   onLogout: () => void;
@@ -21,6 +23,7 @@ interface StartMenuProps {
 export default function StartMenu({ onLogout, onClose, menuRef }: StartMenuProps) {
   const user = useAuthStore((state) => state.user);
   const openWindow = useWindowStore((state) => state.openWindow);
+  const installedApps = useAppRegistryStore((state) => state.installedApps);
 
   const handleLaunch = (id: string, title: string) => {
     openWindow(id, title);
@@ -64,6 +67,18 @@ export default function StartMenu({ onLogout, onClose, menuRef }: StartMenuProps
       description: "Processes & Performance Monitor",
       icon: <Activity size={18} className="text-emerald-400" />,
     },
+    {
+      id: "store",
+      title: "App Store",
+      description: "Discover & Install Apps",
+      icon: <ShoppingBag size={18} className="text-indigo-400" />,
+    },
+    ...STORE_CATALOG.filter((a) => installedApps.includes(a.id)).map((a) => ({
+      id: a.id,
+      title: a.name,
+      description: a.description,
+      icon: <span className="text-base">{a.icon}</span>,
+    })),
   ];
 
   return (

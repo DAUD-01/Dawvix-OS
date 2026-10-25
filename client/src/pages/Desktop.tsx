@@ -10,6 +10,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useNotificationStore } from "../stores/notificationStore";
 import { useSocketStore } from "../stores/socketStore";
+import { useAppRegistryStore, STORE_CATALOG } from "../sdk/appRegistry";
 
 import { useState, useRef, useEffect } from "react";
 import WindowManager from "../components/window/WindowManager";
@@ -30,6 +31,7 @@ export default function Desktop() {
   const wallpaper = useSettingsStore((state) => state.wallpaper);
   const { isCenterOpen, setCenterOpen } = useNotificationStore();
   const { initSocket, cleanupSocket } = useSocketStore();
+  const installedApps = useAppRegistryStore((state) => state.installedApps);
 
   useEffect(() => {
     if (user) {
@@ -136,6 +138,21 @@ export default function Desktop() {
           name="Monitor"
           onClick={() => openWindow("monitor", "Task Manager")}
         />
+        <DesktopIcon
+          icon="🛍️"
+          name="Store"
+          onClick={() => openWindow("store", "App Store")}
+        />
+        {STORE_CATALOG.filter((app) => installedApps.includes(app.id)).map(
+          (app) => (
+            <DesktopIcon
+              key={app.id}
+              icon={app.icon}
+              name={app.name.split(" ")[0]}
+              onClick={() => openWindow(app.id, app.name)}
+            />
+          ),
+        )}
       </div>
 
       {/* Desktop Workspace for Windows (bounds isolated above taskbar) */}

@@ -114,6 +114,61 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
         onClose();
       },
     },
+    {
+      id: "app-monitor",
+      title: "Task Manager",
+      subtitle: "Processes & Performance Monitor",
+      category: "Apps" as const,
+      icon: <span className="text-base">📊</span>,
+      action: () => {
+        openWindow("monitor", "Task Manager");
+        onClose();
+      },
+    },
+    {
+      id: "app-store",
+      title: "App Store",
+      subtitle: "Discover & Install Applications",
+      category: "Apps" as const,
+      icon: <span className="text-base">🛍️</span>,
+      action: () => {
+        openWindow("store", "App Store");
+        onClose();
+      },
+    },
+    {
+      id: "app-calculator",
+      title: "Calculator",
+      subtitle: "Standard & Arithmetic Calculator",
+      category: "Apps" as const,
+      icon: <span className="text-base">🧮</span>,
+      action: () => {
+        openWindow("calculator", "Calculator");
+        onClose();
+      },
+    },
+    {
+      id: "app-paint",
+      title: "Paint Studio",
+      subtitle: "Drawing Canvas & VFS Export",
+      category: "Apps" as const,
+      icon: <span className="text-base">🎨</span>,
+      action: () => {
+        openWindow("paint", "Paint Studio");
+        onClose();
+      },
+    },
+    {
+      id: "app-calendar",
+      title: "Calendar & Agenda",
+      subtitle: "Planner & Date Reminders",
+      category: "Apps" as const,
+      icon: <span className="text-base">📅</span>,
+      action: () => {
+        openWindow("calendar", "Calendar");
+        onClose();
+      },
+    },
   ];
 
   // Dynamic search results

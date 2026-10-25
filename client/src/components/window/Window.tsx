@@ -8,6 +8,10 @@ import SettingsApp from "../apps/SettingsApp";
 import TerminalApp from "../apps/TerminalApp";
 import CodeEditorApp from "../apps/CodeEditorApp";
 import SystemMonitorApp from "../apps/SystemMonitorApp";
+import AppStoreApp from "../apps/AppStoreApp";
+import CalculatorApp from "../apps/CalculatorApp";
+import PaintApp from "../apps/PaintApp";
+import CalendarApp from "../apps/CalendarApp";
 
 interface WindowProps {
   window: WindowData;
@@ -49,6 +53,15 @@ export default function Window({ window: win }: WindowProps) {
       case "monitor":
       case "system-monitor":
         return <SystemMonitorApp />;
+      case "store":
+      case "appstore":
+        return <AppStoreApp />;
+      case "calculator":
+        return <CalculatorApp />;
+      case "paint":
+        return <PaintApp />;
+      case "calendar":
+        return <CalendarApp />;
       default:
         return (
           <div className="flex h-full items-center justify-center p-6 text-slate-400">
