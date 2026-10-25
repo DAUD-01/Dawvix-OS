@@ -3,6 +3,7 @@ import WindowList from "./WindowList";
 import { Search, Bell, Wifi, Volume2 } from "lucide-react";
 import type { RefObject } from "react";
 import { useNotificationStore } from "../../stores/notificationStore";
+import { useWindowStore } from "../../stores/windowStore";
 
 interface TaskbarProps {
   onStartClick: () => void;
@@ -18,6 +19,7 @@ export default function Taskbar({
   onSearchClick,
 }: TaskbarProps) {
   const { isCenterOpen, toggleCenter, unreadCount } = useNotificationStore();
+  const toggleShowDesktop = useWindowStore((state) => state.toggleShowDesktop);
 
   return (
     <div
@@ -117,6 +119,14 @@ export default function Taskbar({
         >
           <Clock />
         </button>
+
+        {/* Show Desktop Vertical Sliver */}
+        <button
+          type="button"
+          onClick={toggleShowDesktop}
+          title="Show Desktop"
+          className="w-1.5 h-7 ml-1 rounded-sm bg-slate-700/50 hover:bg-cyan-400 transition cursor-pointer"
+        />
       </div>
     </div>
   );

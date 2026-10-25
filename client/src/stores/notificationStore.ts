@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { sound } from "../utils/audioSystem";
 
 export type NotificationType = "info" | "success" | "warning" | "error";
 
@@ -49,6 +50,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 1,
 
   notify: ({ title, message, type = "info", appId, duration = 4000 }) => {
+    sound.play(type === "error" || type === "warning" ? "warning" : "notify");
     const newItem: NotificationItem = {
       id: "notif-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7),
       title,

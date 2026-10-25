@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { WindowData } from "../types/window";
+import { sound } from "../utils/audioSystem";
 
 interface WindowStore {
   windows: WindowData[];
@@ -16,6 +17,7 @@ interface WindowStore {
   maximizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   toggleWindowMinimize: (id: string) => void;
+  toggleShowDesktop: () => void;
   updateWindowParams: (id: string, params: Record<string, unknown>) => void;
   updateWindowGeometry: (
     id: string,
@@ -125,7 +127,8 @@ export const useWindowStore = create<WindowStore>((set) => ({
       };
     }),
 
-  openWindow: (id, title, params) =>
+  openWindow: (id, title, params) => {
+    sound.play("open");
     set((state) => {
       const highestZ = Math.max(...state.windows.map((w) => w.zIndex), 0);
       const exists = state.windows.find((w) => w.id === id);
@@ -192,7 +195,22 @@ export const useWindowStore = create<WindowStore>((set) => ({
         ],
         activeWindowId: id,
       };
-    }),
+    });
+  },
+
+  toggleShowDesktop: () => {
+    sound.play("click");
+    set((state) => {
+      const anyVisible = state.windows.some((w) => !w.minimized);
+      return {
+        windows: state.windows.map((w) => ({
+          ...w,
+          minimized: anyVisible ? true : false,
+        })),
+        activeWindowId: anyVisible ? null : state.activeWindowId,
+      };
+    });
+  },
 
   updateWindowParams: (id, params) =>
     set((state) => ({
@@ -206,11 +224,13 @@ export const useWindowStore = create<WindowStore>((set) => ({
       ),
     })),
 
-  closeWindow: (id) =>
+  closeWindow: (id) => {
+    sound.play("close");
     set((state) => ({
       windows: state.windows.filter((w) => w.id !== id),
       activeWindowId: state.activeWindowId === id ? null : state.activeWindowId,
-    })),
+    }));
+  },
 
   updateWindowGeometry: (id, x, y, width, height) =>
     set((state) => ({

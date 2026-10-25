@@ -4,6 +4,7 @@ import DesktopIcon from "../components/desktop/DesktopIcon";
 import SpotlightSearch from "../components/search/SpotlightSearch";
 import ToastContainer from "../components/notifications/ToastContainer";
 import NotificationCenter from "../components/notifications/NotificationCenter";
+import WindowSwitcher from "../components/window/WindowSwitcher";
 
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
@@ -19,6 +20,8 @@ import { useWindowStore } from "../stores/windowStore";
 export default function Desktop() {
   const [startOpen, setStartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [switcherIndex, setSwitcherIndex] = useState(0);
 
   const startButtonRef = useRef<HTMLButtonElement | null>(null);
   const startMenuRef = useRef<HTMLDivElement | null>(null);
@@ -28,6 +31,10 @@ export default function Desktop() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const openWindow = useWindowStore((state) => state.openWindow);
+  const windows = useWindowStore((state) => state.windows);
+  const toggleShowDesktop = useWindowStore((state) => state.toggleShowDesktop);
+  const restoreWindow = useWindowStore((state) => state.restoreWindow);
+  const focusWindow = useWindowStore((state) => state.focusWindow);
   const wallpaper = useSettingsStore((state) => state.wallpaper);
   const { isCenterOpen, setCenterOpen } = useNotificationStore();
   const { initSocket, cleanupSocket } = useSocketStore();
@@ -67,9 +74,10 @@ export default function Desktop() {
     };
   }, [startOpen]);
 
-  // Global Keyboard Shortcuts (Ctrl+Space or Cmd+K for Spotlight)
+  // Global Keyboard Shortcuts (Ctrl+Space/Cmd+K Spotlight, Alt+Tab Switcher, Win/Alt+D Show Desktop)
   useEffect(() => {
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // Spotlight Search: Ctrl+Space or Cmd+K
       if (
         ((e.ctrlKey || e.metaKey) && e.code === "Space") ||
         ((e.ctrlKey || e.metaKey) && e.key === "k")
@@ -77,11 +85,35 @@ export default function Desktop() {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
       }
+
+      // Alt+Tab Window Switcher
+      if (e.altKey && e.key === "Tab") {
+        e.preventDefault();
+        if (windows.length > 0) {
+          setSwitcherOpen(true);
+          setSwitcherIndex((prev) => (prev + 1) % windows.length);
+        }
+      }
+
+      // Show Desktop: Alt+D or Ctrl+Shift+D
+      if (
+        (e.altKey && e.key === "d") ||
+        (e.ctrlKey && e.shiftKey && e.key === "D")
+      ) {
+        e.preventDefault();
+        toggleShowDesktop();
+      }
     };
 
     window.addEventListener("keydown", handleGlobalShortcuts);
     return () => window.removeEventListener("keydown", handleGlobalShortcuts);
-  }, []);
+  }, [windows.length, toggleShowDesktop]);
+
+  const handleSwitcherSelect = (id: string) => {
+    restoreWindow(id);
+    focusWindow(id);
+    setSwitcherOpen(false);
+  };
 
   return (
     <div
@@ -175,6 +207,14 @@ export default function Desktop() {
       <SpotlightSearch
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
+      />
+
+      {/* Alt + Tab Window Switcher */}
+      <WindowSwitcher
+        isOpen={switcherOpen}
+        selectedIndex={switcherIndex}
+        onSelect={handleSwitcherSelect}
+        onClose={() => setSwitcherOpen(false)}
       />
 
       {/* Toast Notifications */}
