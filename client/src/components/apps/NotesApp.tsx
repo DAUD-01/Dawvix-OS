@@ -14,6 +14,7 @@ import {
   List,
   Heading,
   FolderOpen,
+  Users,
 } from "lucide-react";
 import {
   updateFile,
@@ -22,6 +23,8 @@ import {
   type FileData,
 } from "../../services/filesystemService";
 import { useNotificationStore } from "../../stores/notificationStore";
+import { socketService } from "../../services/socketService";
+import { useAuthStore } from "../../stores/authStore";
 
 interface NotesAppProps {
   initialFileId?: string;
@@ -51,8 +54,41 @@ export default function NotesApp({
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [availableNotes, setAvailableNotes] = useState<FileData[]>([]);
   const [notesFolderId, setNotesFolderId] = useState<string | null>(null);
+  const [remoteEditor, setRemoteEditor] = useState<string | null>(null);
 
+  const user = useAuthStore((state) => state.user);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Real-time Collaborative Sync
+  useEffect(() => {
+    if (!fileId) return;
+
+    const username = user?.username || "Collaborator";
+    socketService.joinNoteRoom(fileId, username);
+
+    const unsubUpdate = socketService.onNoteUpdate((data) => {
+      if (data.noteId === fileId) {
+        setContent(data.content);
+        setRemoteEditor(data.updatedBy);
+        setSaved(true);
+        setTimeout(() => setRemoteEditor(null), 3000);
+      }
+    });
+
+    const unsubJoined = socketService.onNoteUserJoined((data) => {
+      useNotificationStore.getState().notify({
+        title: "Collaborator Joined",
+        message: `${data.username} joined this note`,
+        type: "info",
+      });
+    });
+
+    return () => {
+      socketService.leaveNoteRoom(fileId);
+      unsubUpdate();
+      unsubJoined();
+    };
+  }, [fileId, user?.username]);
 
   // Sync when window params change
   useEffect(() => {
@@ -440,8 +476,17 @@ export default function NotesApp({
             ref={textareaRef}
             value={content}
             onChange={(e) => {
-              setContent(e.target.value);
+              const nextVal = e.target.value;
+              setContent(nextVal);
               setSaved(false);
+              if (fileId) {
+                socketService.emitNoteEdit(
+                  fileId,
+                  nextVal,
+                  user?.username || "Collaborator",
+                  e.target.selectionStart,
+                );
+              }
             }}
             className="flex-1 w-full resize-none bg-slate-950/80 p-5 font-mono text-xs text-slate-100 placeholder-slate-500 focus:outline-none leading-relaxed overflow-y-auto"
             placeholder="Type your note content here..."
@@ -455,6 +500,18 @@ export default function NotesApp({
           <span>{fileName}</span>
           <span>•</span>
           <span>{saved ? "Auto-saved" : "Modified"}</span>
+          {remoteEditor && (
+            <span className="flex items-center gap-1 text-cyan-400 font-medium animate-pulse">
+              <Users size={12} />
+              <span>{remoteEditor} editing...</span>
+            </span>
+          )}
+          {fileId && !remoteEditor && (
+            <span className="flex items-center gap-1 text-emerald-400/80 text-[10px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>Collab Ready</span>
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-3">
           <span>Lines: {lineCount}</span>
